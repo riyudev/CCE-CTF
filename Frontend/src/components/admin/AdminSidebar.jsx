@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function AdminSidebar({ currentPath, navigateTo, onCloseMobile }) {
+export default function AdminSidebar({ currentPath, navigateTo, onCloseMobile, onLogout }) {
   const menuItems = [
     { name: "Dashboard", path: "/admin" },
     { name: "Users", path: "/admin/users" },
@@ -14,6 +14,15 @@ export default function AdminSidebar({ currentPath, navigateTo, onCloseMobile })
   const handleLinkClick = (path) => {
     navigateTo(path);
     if (onCloseMobile) onCloseMobile();
+  };
+
+  const handleLogoutClick = () => {
+    if (onCloseMobile) onCloseMobile();
+    if (onLogout) {
+      onLogout();
+    } else {
+      navigateTo("/admin/login");
+    }
   };
 
   return (
@@ -57,7 +66,7 @@ export default function AdminSidebar({ currentPath, navigateTo, onCloseMobile })
       {/* Footer / LOGOUT */}
       <div className="pt-4 border-t border-[#242424]">
         <button
-          onClick={() => handleLinkClick("/admin/login")}
+          onClick={handleLogoutClick}
           className="w-full text-center py-2.5 bg-[#080808] text-[#8A8A8A] border border-[#242424] hover:border-[#FF4D4D] hover:text-[#FF4D4D] text-xs font-bold uppercase tracking-widest rounded-sm transition-all cursor-pointer"
         >
           LOGOUT

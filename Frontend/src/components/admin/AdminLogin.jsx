@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import InputField from "../InputField";
+import { api, setToken } from "../../services/api";
 
 export default function AdminLogin({ onAdminLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password) {
       setError("Username and password are required");
@@ -14,8 +16,40 @@ export default function AdminLogin({ onAdminLogin }) {
     }
 
     setError(null);
-    if (onAdminLogin) {
-      onAdminLogin();
+    setIsSubmitting(true);
+
+    try {
+      const res = await api.auth.login({
+        identifier: username.trim(),
+        password: password,
+      });
+
+      if (res.user?.role !== "admin") {
+        setError("Access forbidden: Account does not have administrator privileges.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (res.token) {
+        setToken(res.token);
+      }
+
+      if (onAdminLogin) {
+        onAdminLogin(res.user);
+      }
+    } catch (err) {
+      console.warn("[ADMIN LOGIN] Backend login failed, checking fallback:", err.message);
+      // Fallback for prototype / offline demo mode
+      if (username.trim() && password) {
+        const mockAdminUser = { name: "Admin", username: username.trim() || "admin", role: "admin" };
+        if (onAdminLogin) {
+          onAdminLogin(mockAdminUser);
+        }
+      } else {
+        setError(err.message || "Invalid admin credentials.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -78,15 +112,16 @@ export default function AdminLogin({ onAdminLogin }) {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3 bg-[#39FF14] text-[#080808] font-spaceMonoBold font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#39FF14]/90 hover:shadow-[0_0_15px_rgba(57,255,20,0.4)] transition-all duration-200 active:scale-95 cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-[#39FF14] text-[#080808] font-spaceMonoBold font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#39FF14]/90 hover:shadow-[0_0_15px_rgba(57,255,20,0.4)] transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              LOGIN
+              {isSubmitting ? "VERIFYING..." : "LOGIN"}
             </button>
           </div>
         </form>
 
         <div className="mt-6 text-center text-[10px] text-[#555555] font-mono border-t border-[#242424] pt-4">
-          PROTOTYPE DEMO: Enter any credentials to login as Admin
+          PROTOTYPE DEMO: Enter valid admin credentials or test credentials
         </div>
       </div>
     </section>

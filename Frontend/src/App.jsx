@@ -106,6 +106,7 @@ function App() {
     : null;
 
   const isAdminRoute = currentPath.startsWith("/admin");
+  const isAdminAuthenticated = isLoggedIn && currentUser?.role === "admin";
 
   return (
     <div className="min-h-screen bg-[#080808] text-[#F5F5F5] font-spaceMonoBold flex flex-col justify-between selection:bg-[#39FF14] selection:text-[#080808]">
@@ -182,43 +183,48 @@ function App() {
           />
         ) : currentPath === "/leaderboard" ? (
           <LeaderboardPage userTeamName={userTeam?.name || "Cyber Warriors"} />
-        ) : currentPath === "/admin/login" ? (
-          <AdminLogin
-            onAdminLogin={() => {
-              setIsLoggedIn(true);
-              setCurrentUser({ name: "Admin", username: "admin", role: "admin" });
-              navigateTo("/admin");
-            }}
-          />
-        ) : currentPath === "/admin" ? (
-          <AdminDashboard
-            currentPath={currentPath}
-            navigateTo={navigateTo}
-            competitionSettings={competitionSettings}
-            setCompetitionSettings={setCompetitionSettings}
-          />
-        ) : currentPath === "/admin/users" ? (
-          <AdminUsers currentPath={currentPath} navigateTo={navigateTo} />
-        ) : currentPath === "/admin/teams" ? (
-          <AdminTeams currentPath={currentPath} navigateTo={navigateTo} />
-        ) : currentPath === "/admin/challenges" ? (
-          <AdminChallenges
-            currentPath={currentPath}
-            navigateTo={navigateTo}
-            challenges={challenges}
-            setChallenges={setChallenges}
-          />
-        ) : currentPath === "/admin/submissions" ? (
-          <AdminSubmissions currentPath={currentPath} navigateTo={navigateTo} />
-        ) : currentPath === "/admin/leaderboard" ? (
-          <AdminLeaderboard currentPath={currentPath} navigateTo={navigateTo} />
-        ) : currentPath === "/admin/competition" ? (
-          <AdminCompetition
-            currentPath={currentPath}
-            navigateTo={navigateTo}
-            competitionSettings={competitionSettings}
-            setCompetitionSettings={setCompetitionSettings}
-          />
+        ) : isAdminRoute ? (
+          currentPath === "/admin/login" || !isAdminAuthenticated ? (
+            <AdminLogin
+              onAdminLogin={(user) => {
+                setIsLoggedIn(true);
+                setCurrentUser(user || { name: "Admin", username: "admin", role: "admin" });
+                navigateTo("/admin");
+              }}
+            />
+          ) : currentPath === "/admin/users" ? (
+            <AdminUsers currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
+          ) : currentPath === "/admin/teams" ? (
+            <AdminTeams currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
+          ) : currentPath === "/admin/challenges" ? (
+            <AdminChallenges
+              currentPath={currentPath}
+              navigateTo={navigateTo}
+              onLogout={handleLogout}
+              challenges={challenges}
+              setChallenges={setChallenges}
+            />
+          ) : currentPath === "/admin/submissions" ? (
+            <AdminSubmissions currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
+          ) : currentPath === "/admin/leaderboard" ? (
+            <AdminLeaderboard currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
+          ) : currentPath === "/admin/competition" ? (
+            <AdminCompetition
+              currentPath={currentPath}
+              navigateTo={navigateTo}
+              onLogout={handleLogout}
+              competitionSettings={competitionSettings}
+              setCompetitionSettings={setCompetitionSettings}
+            />
+          ) : (
+            <AdminDashboard
+              currentPath={currentPath}
+              navigateTo={navigateTo}
+              onLogout={handleLogout}
+              competitionSettings={competitionSettings}
+              setCompetitionSettings={setCompetitionSettings}
+            />
+          )
         ) : (
           <>
             <HeroSection

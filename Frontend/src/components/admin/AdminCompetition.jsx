@@ -4,6 +4,7 @@ import AdminLayout from "./AdminLayout";
 export default function AdminCompetition({
   currentPath,
   navigateTo,
+  onLogout,
   competitionSettings,
   setCompetitionSettings,
 }) {
@@ -12,7 +13,7 @@ export default function AdminCompetition({
   };
 
   return (
-    <AdminLayout currentPath={currentPath} navigateTo={navigateTo}>
+    <AdminLayout currentPath={currentPath} navigateTo={navigateTo} onLogout={onLogout}>
       <div className="border-b border-[#242424] pb-6">
         <h1 className="text-2xl sm:text-3xl font-minecraftBold text-[#F5F5F5] tracking-wide mb-1">
           COMPETITION SETTINGS

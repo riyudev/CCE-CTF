@@ -5,6 +5,7 @@ import { initialAdminSubmissions } from "../../data/adminData";
 export default function AdminDashboard({
   currentPath,
   navigateTo,
+  onLogout,
   competitionSettings,
   setCompetitionSettings,
 }) {
@@ -46,7 +47,7 @@ export default function AdminDashboard({
   };
 
   return (
-    <AdminLayout currentPath={currentPath} navigateTo={navigateTo}>
+    <AdminLayout currentPath={currentPath} navigateTo={navigateTo} onLogout={onLogout}>
       {/* 1. Header */}
       <div className="border-b border-[#242424] pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

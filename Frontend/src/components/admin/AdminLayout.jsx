@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 
-export default function AdminLayout({ currentPath, navigateTo, children }) {
+export default function AdminLayout({ currentPath, navigateTo, onLogout, children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#080808] text-[#F5F5F5] font-spaceMonoBold flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
-        <AdminSidebar currentPath={currentPath} navigateTo={navigateTo} />
+        <AdminSidebar currentPath={currentPath} navigateTo={navigateTo} onLogout={onLogout} />
       </div>
 
       {/* Mobile Top Header */}
@@ -30,6 +30,7 @@ export default function AdminLayout({ currentPath, navigateTo, children }) {
           <AdminSidebar
             currentPath={currentPath}
             navigateTo={navigateTo}
+            onLogout={onLogout}
             onCloseMobile={() => setMobileMenuOpen(false)}
           />
         </div>

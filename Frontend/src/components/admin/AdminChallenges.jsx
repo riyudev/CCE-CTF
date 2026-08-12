@@ -5,6 +5,7 @@ import InputField from "../InputField";
 export default function AdminChallenges({
   currentPath,
   navigateTo,
+  onLogout,
   challenges,
   setChallenges,
 }) {
@@ -71,7 +72,7 @@ export default function AdminChallenges({
                 description: formData.description,
                 flag: formData.flag,
                 file: formData.fileName
-                  ? { name: formData.fileName, size: "1.0 MB" }
+                  ? { name: formData.fileName, size: item.file?.size || "1.2 MB" }
                   : null,
               }
             : item
@@ -79,9 +80,8 @@ export default function AdminChallenges({
       );
     } else {
       // Add new
-      const newId = String(Date.now());
       const newChallenge = {
-        id: newId,
+        id: `chal_${Date.now()}`,
         title: formData.title,
         category: formData.category,
         difficulty: formData.difficulty,
@@ -107,7 +107,7 @@ export default function AdminChallenges({
   };
 
   return (
-    <AdminLayout currentPath={currentPath} navigateTo={navigateTo}>
+    <AdminLayout currentPath={currentPath} navigateTo={navigateTo} onLogout={onLogout}>
       {/* Header */}
       <div className="border-b border-[#242424] pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { initialAdminSubmissions } from "../../data/adminData";
 
-export default function AdminSubmissions({ currentPath, navigateTo }) {
+export default function AdminSubmissions({ currentPath, navigateTo, onLogout }) {
   const [filterResult, setFilterResult] = useState("ALL"); // 'ALL' | 'CORRECT' | 'INCORRECT'
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -19,7 +19,7 @@ export default function AdminSubmissions({ currentPath, navigateTo }) {
   });
 
   return (
-    <AdminLayout currentPath={currentPath} navigateTo={navigateTo}>
+    <AdminLayout currentPath={currentPath} navigateTo={navigateTo} onLogout={onLogout}>
       <div className="border-b border-[#242424] pb-6">
         <h1 className="text-2xl sm:text-3xl font-minecraftBold text-[#F5F5F5] tracking-wide mb-1">
           SUBMISSIONS LOG
