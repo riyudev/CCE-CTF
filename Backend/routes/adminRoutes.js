@@ -1,0 +1,42 @@
+import express from "express";
+import {
+  getAdminUsers,
+  deleteAdminUser,
+  getAdminTeams,
+  deleteAdminTeam,
+  getAdminChallenges,
+  createAdminChallenge,
+  updateAdminChallenge,
+  deleteAdminChallenge,
+  getAdminSubmissions,
+  getAdminCompetitionSettings,
+  updateAdminCompetitionSettings,
+} from "../controllers/adminController.js";
+import { protect, requireAdmin } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router.use(protect, requireAdmin);
+
+// User Management
+router.get("/users", getAdminUsers);
+router.delete("/users/:id", deleteAdminUser);
+
+// Team Management
+router.get("/teams", getAdminTeams);
+router.delete("/teams/:id", deleteAdminTeam);
+
+// Challenge CRUD
+router.get("/challenges", getAdminChallenges);
+router.post("/challenges", createAdminChallenge);
+router.put("/challenges/:id", updateAdminChallenge);
+router.delete("/challenges/:id", deleteAdminChallenge);
+
+// Submission Monitoring
+router.get("/submissions", getAdminSubmissions);
+
+// Competition Settings
+router.get("/competition", getAdminCompetitionSettings);
+router.put("/competition", updateAdminCompetitionSettings);
+
+export default router;

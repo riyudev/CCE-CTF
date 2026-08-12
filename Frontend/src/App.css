@@ -1,0 +1,14 @@
+@font-face {
+  font-family: "minecraft-bold";
+  src: local("MinecraftBold-nMK1"),
+    url("./assets/fonts/MinecraftBold-nMK1.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "space-mono-bold";
+  src: local("SpaceMono-Bold"),
+    url("./assets/fonts/SpaceMono-Bold.ttf") format("truetype");
+}
+html {
+  scroll-behavior: smooth;
+}
