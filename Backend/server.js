@@ -7,6 +7,7 @@ import teamRoutes from "./routes/teamRoutes.js";
 import challengeRoutes from "./routes/challengeRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import competitionRoutes from "./routes/competitionRoutes.js";
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use("/api/teams", teamRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/competition", competitionRoutes);
 
 // Root health check
 app.get("/", (req, res) => {

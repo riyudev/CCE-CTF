@@ -1,13 +1,30 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Token helpers
+// Token & User session helpers
 export const getToken = () => localStorage.getItem("cce_ctf_token");
 export const setToken = (token) => {
   if (token) {
     localStorage.setItem("cce_ctf_token", token);
   } else {
     localStorage.removeItem("cce_ctf_token");
+  }
+};
+
+export const getStoredUser = () => {
+  try {
+    const userStr = localStorage.getItem("cce_ctf_user");
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const setStoredUser = (user) => {
+  if (user) {
+    localStorage.setItem("cce_ctf_user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("cce_ctf_user");
   }
 };
 
@@ -30,6 +47,10 @@ async function request(endpoint, options = {}) {
     const data = await res.json();
 
     if (!res.ok) {
+      if (res.status === 401 && !endpoint.startsWith("/auth/login") && !endpoint.startsWith("/auth/register")) {
+        setToken(null);
+        setStoredUser(null);
+      }
       throw new Error(data.message || "API request failed");
     }
 
@@ -90,6 +111,11 @@ export const api = {
   // --- LEADERBOARD ---
   leaderboard: {
     get: () => request("/leaderboard"),
+  },
+
+  // --- PUBLIC COMPETITION ---
+  competition: {
+    get: () => request("/competition"),
   },
 
   // --- ADMIN ---

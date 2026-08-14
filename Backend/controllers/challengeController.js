@@ -2,6 +2,7 @@ import { Challenge } from "../models/Challenge.js";
 import { Submission } from "../models/Submission.js";
 import { Team } from "../models/Team.js";
 import { User } from "../models/User.js";
+import { getCompetitionState } from "./competitionController.js";
 
 // @desc    Get all active challenges (excluding flag)
 // @route   GET /api/challenges
@@ -56,6 +57,32 @@ export const getSolvedChallenges = async (req, res) => {
 // @route   POST /api/challenges/:id/submit
 export const submitFlag = async (req, res) => {
   try {
+    // 1. Enforce Server Competition Status
+    const compState = await getCompetitionState();
+    if (compState.activeState === "ENDED") {
+      return res.status(400).json({
+        message: "Thank you for participating. The CCE-CTF competition has ended.",
+        code: "COMPETITION_ENDED",
+        competitionEnded: true,
+      });
+    }
+
+    if (compState.activeState === "NOT_STARTED") {
+      return res.status(400).json({
+        message: "Please wait until the competition begins.",
+        code: "COMPETITION_NOT_STARTED",
+        competitionEnded: false,
+      });
+    }
+
+    if (compState.activeState === "PAUSED") {
+      return res.status(400).json({
+        message: "The competition is currently paused by administrators.",
+        code: "COMPETITION_PAUSED",
+        competitionEnded: false,
+      });
+    }
+
     const { flag } = req.body;
     const userId = req.user._id;
 
@@ -93,8 +120,9 @@ export const submitFlag = async (req, res) => {
 
     // Flag validation
     const submittedFlagTrimmed = flag.trim();
-    const isCorrect = submittedFlagTrimmed.toLowerCase() === challenge.flag.toLowerCase();
+    const isCorrect = submittedFlagTrimmed.toLowerCase() === challenge.flag.trim().toLowerCase();
 
+    // Create submission record in DB
     const submission = await Submission.create({
       user: userId,
       team: user.team,
@@ -102,6 +130,7 @@ export const submitFlag = async (req, res) => {
       submittedFlag: submittedFlagTrimmed,
       correct: isCorrect,
       points: isCorrect ? challenge.points : 0,
+      submittedAt: new Date(),
     });
 
     if (isCorrect) {
@@ -114,6 +143,7 @@ export const submitFlag = async (req, res) => {
         correct: true,
         points: challenge.points,
         message: "Correct flag! Team points updated.",
+        submissionId: submission._id,
       });
     }
 
@@ -121,9 +151,11 @@ export const submitFlag = async (req, res) => {
       correct: false,
       points: 0,
       message: "Incorrect flag.",
+      submissionId: submission._id,
     });
   } catch (error) {
     console.error("[CHALLENGE CONTROLLER] Submit Flag Error:", error.message);
     return res.status(500).json({ message: "Server error submitting flag." });
   }
 };
+

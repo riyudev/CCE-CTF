@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import InputField from "../InputField";
-import { api, setToken } from "../../services/api";
+import { api, setToken, setStoredUser } from "../../services/api";
 
 export default function AdminLogin({ onAdminLogin }) {
   const [username, setUsername] = useState("");
@@ -33,21 +33,13 @@ export default function AdminLogin({ onAdminLogin }) {
       if (res.token) {
         setToken(res.token);
       }
+      setStoredUser(res.user);
 
       if (onAdminLogin) {
         onAdminLogin(res.user);
       }
     } catch (err) {
-      console.warn("[ADMIN LOGIN] Backend login failed, checking fallback:", err.message);
-      // Fallback for prototype / offline demo mode
-      if (username.trim() && password) {
-        const mockAdminUser = { name: "Admin", username: username.trim() || "admin", role: "admin" };
-        if (onAdminLogin) {
-          onAdminLogin(mockAdminUser);
-        }
-      } else {
-        setError(err.message || "Invalid admin credentials.");
-      }
+      setError(err.message || "Invalid admin credentials.");
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +113,7 @@ export default function AdminLogin({ onAdminLogin }) {
         </form>
 
         <div className="mt-6 text-center text-[10px] text-[#555555] font-mono border-t border-[#242424] pt-4">
-          PROTOTYPE DEMO: Enter valid admin credentials or test credentials
+          Use your administrator account credentials to sign in.
         </div>
       </div>
     </section>

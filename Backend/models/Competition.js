@@ -13,11 +13,11 @@ const competitionSchema = new mongoose.Schema(
     },
     startTime: {
       type: String,
-      default: "2026-08-12 08:00:00 UTC",
+      default: "2026-08-12T08:00:00.000Z",
     },
     endTime: {
       type: String,
-      default: "2026-08-12 18:00:00 UTC",
+      default: "2026-08-14T18:00:00.000Z",
     },
     registrationOpen: {
       type: Boolean,
@@ -34,3 +34,4 @@ const competitionSchema = new mongoose.Schema(
 );
 
 export const Competition = mongoose.model("Competition", competitionSchema);
+

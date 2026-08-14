@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AuthLayout from "./AuthLayout";
 import InputField from "./InputField";
-import { api, setToken } from "../services/api";
+import { api, setToken, setStoredUser } from "../services/api";
 
 export default function LoginPage({ navigateTo, onAuthSuccess }) {
   const [formData, setFormData] = useState({
@@ -49,6 +49,9 @@ export default function LoginPage({ navigateTo, onAuthSuccess }) {
 
       if (res.token) {
         setToken(res.token);
+      }
+      if (res.user) {
+        setStoredUser(res.user);
       }
 
       if (onAuthSuccess) {

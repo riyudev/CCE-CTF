@@ -19,6 +19,12 @@ export const deleteAdminUser = async (req, res) => {
     if (String(req.params.id) === String(req.user._id)) {
       return res.status(400).json({ message: "Admin cannot delete their own account." });
     }
+    const userToDelete = await User.findById(req.params.id);
+    if (userToDelete && userToDelete.team) {
+      await Team.findByIdAndUpdate(userToDelete.team, {
+        $pull: { members: userToDelete._id },
+      });
+    }
     await User.findByIdAndDelete(req.params.id);
     return res.json({ message: "User deleted successfully." });
   } catch (error) {

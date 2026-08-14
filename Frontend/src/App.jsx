@@ -19,42 +19,63 @@ import AdminLeaderboard from "./components/admin/AdminLeaderboard";
 import AdminCompetition from "./components/admin/AdminCompetition";
 import Footer from "./components/Footer";
 import { initialChallenges } from "./data/challenges";
-import { initialCompetitionSettings } from "./data/adminData";
-import { api, getToken, setToken } from "./services/api";
+import { api, getToken, setToken, getStoredUser, setStoredUser } from "./services/api";
 import "./App.css";
 
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
   const [toastMessage, setToastMessage] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userTeam, setUserTeam] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser());
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken() || getStoredUser()));
+  const [userTeam, setUserTeam] = useState(() => getStoredUser()?.team || null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Global challenge state persistent across navigation
   const [challenges, setChallenges] = useState(initialChallenges);
 
-  // Global admin competition state
-  const [competitionSettings, setCompetitionSettings] = useState(initialCompetitionSettings);
+  // Global admin competition state (loaded from API when admin is authenticated)
+  const [competitionSettings, setCompetitionSettings] = useState(null);
 
   // Load authenticated user session on mount
   useEffect(() => {
     async function loadAuth() {
       const token = getToken();
-      if (!token) return;
+      const stored = getStoredUser();
 
-      try {
-        const res = await api.auth.getMe();
-        if (res.user) {
-          setCurrentUser(res.user);
-          setIsLoggedIn(true);
-          if (res.user.team) {
-            setUserTeam(res.user.team);
-          }
-        }
-      } catch (err) {
-        console.log("[APP] Auth restore failed:", err.message);
+      // Clear legacy demo token that cannot pass JWT validation
+      if (token === "demo_admin_token_2026") {
         setToken(null);
+        setStoredUser(null);
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+        setIsAuthLoading(false);
+        return;
       }
+
+      if (stored) {
+        setCurrentUser(stored);
+        setIsLoggedIn(true);
+        if (stored.team) setUserTeam(stored.team);
+      }
+
+      if (token) {
+        try {
+          const res = await api.auth.getMe();
+          if (res.user) {
+            setCurrentUser(res.user);
+            setIsLoggedIn(true);
+            setStoredUser(res.user);
+            if (res.user.team) setUserTeam(res.user.team);
+          }
+        } catch (err) {
+          console.log("[APP] Auth restore failed:", err.message);
+          setToken(null);
+          setStoredUser(null);
+          setCurrentUser(null);
+          setIsLoggedIn(false);
+        }
+      }
+      setIsAuthLoading(false);
     }
     loadAuth();
   }, []);
@@ -85,6 +106,7 @@ function App() {
 
   const handleLogout = () => {
     setToken(null);
+    setStoredUser(null);
     setIsLoggedIn(false);
     setCurrentUser(null);
     setUserTeam(null);
@@ -106,7 +128,19 @@ function App() {
     : null;
 
   const isAdminRoute = currentPath.startsWith("/admin");
-  const isAdminAuthenticated = isLoggedIn && currentUser?.role === "admin";
+  const isAdminAuthenticated =
+    isLoggedIn && currentUser?.role === "admin" && Boolean(getToken());
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center font-spaceMonoBold text-[#39FF14] text-xs">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-[#39FF14] animate-ping" />
+          <span>&gt; RESTORING CTF SESSION...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#080808] text-[#F5F5F5] font-spaceMonoBold flex flex-col justify-between selection:bg-[#39FF14] selection:text-[#080808]">
@@ -201,7 +235,6 @@ function App() {
               currentPath={currentPath}
               navigateTo={navigateTo}
               onLogout={handleLogout}
-              challenges={challenges}
               setChallenges={setChallenges}
             />
           ) : currentPath === "/admin/submissions" ? (
