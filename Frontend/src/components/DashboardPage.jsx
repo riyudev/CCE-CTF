@@ -3,21 +3,24 @@ import { api } from "../services/api";
 
 export default function DashboardPage({ userTeam, navigateTo, showToast, currentUser }) {
   const [liveTeam, setLiveTeam] = useState(userTeam || null);
-  const [solvedCount, setSolvedCount] = useState(5);
-  const [totalChallengesCount, setTotalChallengesCount] = useState(20);
-  const [leaderboardRank, setLeaderboardRank] = useState(4);
-  const [secondsLeft, setSecondsLeft] = useState(9918);
+  const [solvedCount, setSolvedCount] = useState(0);
+  const [totalChallengesCount, setTotalChallengesCount] = useState(0);
+  const [leaderboardRank, setLeaderboardRank] = useState("-");
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [competitionStatus, setCompetitionStatus] = useState("LIVE");
   const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const [teamRes, challengesRes, solvedRes, leaderboardRes] = await Promise.allSettled([
-          api.teams.getMyTeam(),
-          api.challenges.getAll(),
-          api.challenges.getSolved(),
-          api.leaderboard.get(),
-        ]);
+        const [teamRes, challengesRes, solvedRes, leaderboardRes, compRes] =
+          await Promise.allSettled([
+            api.teams.getMyTeam(),
+            api.challenges.getAll(),
+            api.challenges.getSolved(),
+            api.leaderboard.get(),
+            api.competition.get(),
+          ]);
 
         if (teamRes.status === "fulfilled" && teamRes.value?.team) {
           setLiveTeam(teamRes.value.team);
@@ -33,10 +36,24 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
 
         if (leaderboardRes.status === "fulfilled" && leaderboardRes.value?.leaderboard) {
           const lb = leaderboardRes.value.leaderboard;
-          const myTeamName = liveTeam?.name || userTeam?.name;
+          const myTeamName = teamRes.status === "fulfilled"
+            ? teamRes.value?.team?.name
+            : userTeam?.name;
           const entry = lb.find((item) => item.team === myTeamName);
           if (entry) {
             setLeaderboardRank(entry.rank);
+          }
+        }
+
+        if (compRes.status === "fulfilled" && compRes.value) {
+          const comp = compRes.value;
+          setCompetitionStatus(comp.activeState || comp.status);
+          if (comp.endTime) {
+            const diff = Math.max(
+              0,
+              Math.floor((new Date(comp.endTime).getTime() - Date.now()) / 1000)
+            );
+            setSecondsLeft(diff);
           }
         }
       } catch (err) {
@@ -73,15 +90,14 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
-  const teamName = liveTeam?.name || userTeam?.name || "Cyber Warriors";
-  const teamCode = liveTeam?.code || userTeam?.code || "CCE-X7K9";
-  const teamScore = liveTeam?.score !== undefined ? liveTeam.score : 350;
-  const membersList = liveTeam?.members || [
-    { name: currentUser?.name || "Reyu", role: "Team Leader", isCurrentUser: true },
-    { name: "Alex", role: "Team Member", isCurrentUser: false },
-    { name: "John", role: "Team Member", isCurrentUser: false },
-  ];
-  const membersCount = Array.isArray(membersList) ? membersList.length : 3;
+  const teamName = liveTeam?.name || userTeam?.name || "No Team";
+  const teamCode = liveTeam?.code || userTeam?.code || "—";
+  const teamScore = liveTeam?.score !== undefined ? liveTeam.score : 0;
+  const membersList = liveTeam?.members || [];
+  const membersCount = Array.isArray(membersList) ? membersList.length : 0;
+
+  const isEnded = competitionStatus === "ENDED";
+  const isUpcoming = competitionStatus === "NOT_STARTED";
 
   const progressPercentage = totalChallengesCount > 0
     ? Math.round((solvedCount / totalChallengesCount) * 100)
@@ -192,25 +208,47 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
             <div className="bg-[#111111] border border-[#242424] p-6 rounded-sm flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#39FF14] animate-ping" />
-                  <span className="text-sm font-minecraftBold text-[#39FF14] tracking-wider uppercase">
-                    COMPETITION STATUS: ● LIVE
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      isEnded ? "bg-[#FF4D4D]" : isUpcoming ? "bg-[#38BDF8]" : "bg-[#39FF14] animate-ping"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-minecraftBold tracking-wider uppercase ${
+                      isEnded ? "text-[#FF4D4D]" : isUpcoming ? "text-[#38BDF8]" : "text-[#39FF14]"
+                    }`}
+                  >
+                    COMPETITION STATUS: ●{" "}
+                    {isEnded ? "ENDED" : isUpcoming ? "UPCOMING" : "LIVE"}
                   </span>
                 </div>
                 <p className="text-xs text-[#8A8A8A]">
-                  Event is currently active. Submit flags before time runs out.
+                  {isEnded
+                    ? "The competition has ended. Thank you for participating."
+                    : isUpcoming
+                      ? "The competition has not started yet. Check back soon."
+                      : "Event is currently active. Submit flags before time runs out."}
                 </p>
               </div>
 
               <div className="bg-[#080808] border border-[#39FF14]/30 px-5 py-3 rounded-sm text-center min-w-[220px]">
-                <div className="text-2xl sm:text-3xl font-minecraftBold text-[#39FF14] tracking-widest">
-                  {timer.hh} : {timer.mm} : {timer.ss}
+                <span className="text-[10px] text-[#8A8A8A] uppercase tracking-widest block mb-1">
+                  {isEnded ? "COMPETITION ENDED" : "TIME REMAINING"}
+                </span>
+                <div
+                  className={`text-2xl sm:text-3xl font-minecraftBold tracking-widest ${
+                    isEnded ? "text-[#FF4D4D]" : "text-[#39FF14]"
+                  }`}
+                >
+                  {isEnded ? "00 : 00 : 00" : `${timer.hh} : ${timer.mm} : ${timer.ss}`}
                 </div>
-                <div className="flex justify-between text-[9px] text-[#8A8A8A] uppercase tracking-widest mt-1 px-1">
-                  <span>HOURS</span>
-                  <span>MINUTES</span>
-                  <span>SECONDS</span>
-                </div>
+                {!isEnded && (
+                  <div className="flex justify-between text-[9px] text-[#8A8A8A] uppercase tracking-widest mt-1 px-1">
+                    <span>HOURS</span>
+                    <span>MINUTES</span>
+                    <span>SECONDS</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -288,9 +326,14 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
               <button
                 type="button"
                 onClick={() => navigateTo("/challenges")}
-                className="w-full py-2.5 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#39FF14]/90 transition-colors cursor-pointer"
+                disabled={isEnded || isUpcoming}
+                className="w-full py-2.5 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#39FF14]/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                VIEW CHALLENGES
+                {isEnded
+                  ? "CHALLENGES ENDED"
+                  : isUpcoming
+                    ? "CHALLENGES NOT YET OPEN"
+                    : "VIEW CHALLENGES"}
               </button>
 
               <button

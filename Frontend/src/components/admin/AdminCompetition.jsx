@@ -156,7 +156,7 @@ export default function AdminCompetition({
           <div className="space-y-4">
             <div>
               <span className="text-xs text-[#8A8A8A] block mb-2 uppercase">Current Status: <strong className="text-[#39FF14]">{localSettings.status}</strong></span>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => handleSaveSettings({ status: "UPCOMING" })}
                   className={`py-2 text-[10px] font-bold uppercase rounded-sm cursor-pointer transition-all ${
@@ -176,16 +176,6 @@ export default function AdminCompetition({
                   }`}
                 >
                   START (LIVE)
-                </button>
-                <button
-                  onClick={() => handleSaveSettings({ status: "PAUSED" })}
-                  className={`py-2 text-[10px] font-bold uppercase rounded-sm cursor-pointer transition-all ${
-                    localSettings.status === "PAUSED"
-                      ? "bg-[#EAB308] text-[#080808]"
-                      : "bg-[#080808] text-[#EAB308] border border-[#EAB308]/50 hover:bg-[#EAB308] hover:text-[#080808]"
-                  }`}
-                >
-                  PAUSE
                 </button>
                 <button
                   onClick={() => handleSaveSettings({ status: "ENDED" })}

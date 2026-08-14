@@ -8,8 +8,26 @@ import { getCompetitionState } from "./competitionController.js";
 // @route   GET /api/challenges
 export const getChallenges = async (req, res) => {
   try {
+    const compState = await getCompetitionState();
+
+    if (compState.activeState === "ENDED") {
+      return res.json({
+        challenges: [],
+        competitionState: "ENDED",
+        message: "CCE CTF challenges have ended. Thank you for participating.",
+      });
+    }
+
+    if (compState.activeState === "NOT_STARTED") {
+      return res.json({
+        challenges: [],
+        competitionState: "NOT_STARTED",
+        message: "The CCE CTF competition has not started yet. Challenges will be available when the event goes live.",
+      });
+    }
+
     const challenges = await Challenge.find({ isActive: true }).select("-flag");
-    return res.json({ challenges });
+    return res.json({ challenges, competitionState: "LIVE" });
   } catch (error) {
     console.error("[CHALLENGE CONTROLLER] Get Challenges Error:", error.message);
     return res.status(500).json({ message: "Server error fetching challenges." });
@@ -20,6 +38,22 @@ export const getChallenges = async (req, res) => {
 // @route   GET /api/challenges/:id
 export const getChallengeById = async (req, res) => {
   try {
+    const compState = await getCompetitionState();
+
+    if (compState.activeState === "ENDED") {
+      return res.status(403).json({
+        message: "CCE CTF challenges have ended. Thank you for participating.",
+        competitionState: "ENDED",
+      });
+    }
+
+    if (compState.activeState === "NOT_STARTED") {
+      return res.status(403).json({
+        message: "The CCE CTF competition has not started yet.",
+        competitionState: "NOT_STARTED",
+      });
+    }
+
     const challenge = await Challenge.findById(req.params.id).select("-flag");
     if (!challenge || !challenge.isActive) {
       return res.status(404).json({ message: "Challenge not found." });
@@ -71,14 +105,6 @@ export const submitFlag = async (req, res) => {
       return res.status(400).json({
         message: "Please wait until the competition begins.",
         code: "COMPETITION_NOT_STARTED",
-        competitionEnded: false,
-      });
-    }
-
-    if (compState.activeState === "PAUSED") {
-      return res.status(400).json({
-        message: "The competition is currently paused by administrators.",
-        code: "COMPETITION_PAUSED",
         competitionEnded: false,
       });
     }

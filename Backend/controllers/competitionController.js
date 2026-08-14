@@ -11,17 +11,20 @@ export const getCompetitionState = async () => {
   const startTime = competition.startTime ? new Date(competition.startTime) : null;
   const endTime = competition.endTime ? new Date(competition.endTime) : null;
 
-  let activeState = competition.status; // default to configured status
+  let activeState = competition.status;
 
-  // Enforce server time boundaries if times are valid dates
-  if (competition.status === "LIVE") {
+  if (competition.status === "ENDED") {
+    activeState = "ENDED";
+  } else if (competition.status === "UPCOMING") {
+    activeState = "NOT_STARTED";
+  } else if (competition.status === "LIVE") {
     if (startTime && !isNaN(startTime.getTime()) && now < startTime) {
       activeState = "NOT_STARTED";
     } else if (endTime && !isNaN(endTime.getTime()) && now >= endTime) {
       activeState = "ENDED";
+    } else {
+      activeState = "LIVE";
     }
-  } else if (competition.status === "UPCOMING") {
-    activeState = "NOT_STARTED";
   }
 
   return {

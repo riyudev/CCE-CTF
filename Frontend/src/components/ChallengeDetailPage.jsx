@@ -3,12 +3,14 @@ import { api } from "../services/api";
 
 export default function ChallengeDetailPage({
   challengeId,
-  challenges: fallbackChallenges,
   onSolveChallenge,
   navigateTo,
   showToast,
 }) {
   const [challenge, setChallenge] = useState(null);
+  const [blockedState, setBlockedState] = useState(null);
+  const [blockedMessage, setBlockedMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [inputFlag, setInputFlag] = useState("");
   const [submissionResult, setSubmissionResult] = useState(null); // 'correct' | 'incorrect' | null
   const [resultMessage, setResultMessage] = useState("");
@@ -17,24 +19,70 @@ export default function ChallengeDetailPage({
 
   useEffect(() => {
     async function fetchDetails() {
+      setLoading(true);
+      setBlockedState(null);
       try {
         const res = await api.challenges.getById(challengeId);
         if (res.challenge) {
           setChallenge(res.challenge);
         }
 
-        const solvedRes = await api.challenges.getSolved();
-        if (solvedRes.solvedChallengeIds?.includes(String(challengeId))) {
-          setIsAlreadySolved(true);
+        try {
+          const solvedRes = await api.challenges.getSolved();
+          if (solvedRes.solvedChallengeIds?.includes(String(challengeId))) {
+            setIsAlreadySolved(true);
+          }
+        } catch {
+          // optional if not logged in
         }
       } catch (err) {
-        console.log("[CHALLENGE DETAIL] API Error, falling back to props:", err.message);
-        const fb = fallbackChallenges?.find((c) => String(c.id || c._id) === String(challengeId));
-        if (fb) setChallenge(fb);
+        if (
+          err.message?.includes("ended") ||
+          err.message?.includes("not started")
+        ) {
+          setBlockedState(
+            err.message.includes("ended") ? "ENDED" : "NOT_STARTED"
+          );
+          setBlockedMessage(err.message);
+        }
+      } finally {
+        setLoading(false);
       }
     }
     fetchDetails();
-  }, [challengeId, fallbackChallenges]);
+  }, [challengeId]);
+
+  if (loading) {
+    return (
+      <section className="min-h-[calc(100vh-4rem-4rem)] py-12 px-4 bg-[#080808] font-spaceMonoBold text-center">
+        <p className="text-xs text-[#39FF14] font-mono pt-24">&gt; LOADING CHALLENGE...</p>
+      </section>
+    );
+  }
+
+  if (blockedState) {
+    const isEnded = blockedState === "ENDED";
+    return (
+      <section className="min-h-[calc(100vh-4rem-4rem)] py-12 px-4 bg-[#080808] font-spaceMonoBold text-center">
+        <div
+          className={`max-w-md mx-auto bg-[#111111] border p-8 rounded-sm ${
+            isEnded ? "border-[#FF4D4D]/40" : "border-[#38BDF8]/40"
+          }`}
+        >
+          <h2 className="text-xl font-minecraftBold text-[#F5F5F5] mb-4 uppercase">
+            {isEnded ? "CCE CTF CHALLENGES ENDED" : "CCE CTF COMPETITION UPCOMING"}
+          </h2>
+          <p className="text-xs text-[#8A8A8A] mb-6">{blockedMessage}</p>
+          <button
+            onClick={() => navigateTo("/challenges")}
+            className="px-4 py-2 bg-[#39FF14] text-[#080808] text-xs font-bold uppercase rounded-sm cursor-pointer"
+          >
+            RETURN TO CHALLENGES
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (!challenge) {
     return (
@@ -88,16 +136,8 @@ export default function ChallengeDetailPage({
         setResultMessage(res.message || "Incorrect flag. Try again.");
       }
     } catch (err) {
-      // Fallback for prototype testing if backend is offline
-      if (challenge.flag && trimmed.toLowerCase() === challenge.flag.toLowerCase()) {
-        setSubmissionResult("correct");
-        setResultMessage("Correct flag! +Points awarded.");
-        setIsAlreadySolved(true);
-        if (onSolveChallenge) onSolveChallenge(challenge._id || challenge.id);
-      } else {
-        setSubmissionResult("incorrect");
-        setResultMessage(err.message || "Incorrect flag. Try again.");
-      }
+      setSubmissionResult("incorrect");
+      setResultMessage(err.message || "Incorrect flag. Try again.");
     } finally {
       setIsSubmitting(false);
     }

@@ -2,38 +2,53 @@ import React, { useState, useMemo, useEffect } from "react";
 import ChallengeCard from "./ChallengeCard";
 import { api } from "../services/api";
 
-export default function ChallengesPage({ challenges: fallbackChallenges, navigateTo }) {
+export default function ChallengesPage({ navigateTo }) {
   const [liveChallenges, setLiveChallenges] = useState([]);
   const [solvedIds, setSolvedIds] = useState([]);
+  const [competitionState, setCompetitionState] = useState(null);
+  const [blockedMessage, setBlockedMessage] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const categories = ["ALL", "WEB", "CRYPTO", "FORENSICS", "REVERSE", "MISC"];
 
   useEffect(() => {
     async function loadChallengesData() {
+      setLoading(true);
       try {
-        const [cRes, sRes] = await Promise.allSettled([
-          api.challenges.getAll(),
-          api.challenges.getSolved(),
-        ]);
+        const cRes = await api.challenges.getAll();
 
-        if (cRes.status === "fulfilled" && cRes.value?.challenges) {
-          setLiveChallenges(cRes.value.challenges);
-        } else if (fallbackChallenges) {
-          setLiveChallenges(fallbackChallenges);
+        if (cRes.competitionState) {
+          setCompetitionState(cRes.competitionState);
+        }
+        if (cRes.message) {
+          setBlockedMessage(cRes.message);
         }
 
-        if (sRes.status === "fulfilled" && sRes.value?.solvedChallengeIds) {
-          setSolvedIds(sRes.value.solvedChallengeIds);
+        if (cRes.challenges) {
+          setLiveChallenges(cRes.challenges);
+        }
+
+        try {
+          const sRes = await api.challenges.getSolved();
+          if (sRes.solvedChallengeIds) {
+            setSolvedIds(sRes.solvedChallengeIds);
+          }
+        } catch {
+          // User may not be logged in — solved list optional
         }
       } catch (err) {
         console.log("[CHALLENGES PAGE] Load Error:", err.message);
-        if (fallbackChallenges) setLiveChallenges(fallbackChallenges);
+      } finally {
+        setLoading(false);
       }
     }
     loadChallengesData();
-  }, [fallbackChallenges]);
+  }, []);
+
+  const isBlocked =
+    competitionState === "ENDED" || competitionState === "NOT_STARTED";
 
   const mergedChallenges = useMemo(() => {
     return liveChallenges.map((c) => ({
@@ -59,6 +74,59 @@ export default function ChallengesPage({ challenges: fallbackChallenges, navigat
   const totalPoints = mergedChallenges
     .filter((c) => c.solved)
     .reduce((sum, c) => sum + c.points, 0);
+
+  if (loading) {
+    return (
+      <section className="relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold">
+        <div className="relative max-w-7xl mx-auto z-10 text-center py-24">
+          <p className="text-xs text-[#39FF14] font-mono">&gt; LOADING CHALLENGES...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (isBlocked) {
+    const isEnded = competitionState === "ENDED";
+    return (
+      <section className="relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold">
+        <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
+        <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
+
+        <div className="relative max-w-2xl mx-auto z-10 py-24">
+          <div
+            className={`bg-[#111111] border rounded-sm p-10 text-center space-y-4 ${
+              isEnded ? "border-[#FF4D4D]/40" : "border-[#38BDF8]/40"
+            }`}
+          >
+            <div
+              className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl font-minecraftBold border ${
+                isEnded
+                  ? "border-[#FF4D4D]/40 text-[#FF4D4D] bg-[#FF4D4D]/10"
+                  : "border-[#38BDF8]/40 text-[#38BDF8] bg-[#38BDF8]/10"
+              }`}
+            >
+              {isEnded ? "✕" : "◷"}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-minecraftBold text-[#F5F5F5] tracking-wide uppercase">
+              {isEnded ? "CCE CTF CHALLENGES ENDED" : "CCE CTF COMPETITION UPCOMING"}
+            </h1>
+            <p className="text-sm text-[#8A8A8A] leading-relaxed max-w-md mx-auto">
+              {blockedMessage ||
+                (isEnded
+                  ? "Thank you for participating. Challenges are no longer available."
+                  : "The competition has not started yet. Check back when the event goes live.")}
+            </p>
+            <button
+              onClick={() => navigateTo("/leaderboard")}
+              className="mt-4 px-6 py-2.5 bg-[#080808] text-[#39FF14] border border-[#39FF14]/50 text-xs font-bold uppercase tracking-wider rounded-sm hover:bg-[#39FF14] hover:text-[#080808] transition-all cursor-pointer"
+            >
+              VIEW LEADERBOARD
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold">

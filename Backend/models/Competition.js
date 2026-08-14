@@ -8,7 +8,7 @@ const competitionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["UPCOMING", "LIVE", "PAUSED", "ENDED"],
+      enum: ["UPCOMING", "LIVE", "ENDED"],
       default: "LIVE",
     },
     startTime: {

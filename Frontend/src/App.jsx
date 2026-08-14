@@ -203,20 +203,16 @@ function App() {
             currentUser={currentUser}
           />
         ) : currentPath === "/challenges" ? (
-          <ChallengesPage
-            challenges={challenges}
-            navigateTo={navigateTo}
-          />
+          <ChallengesPage navigateTo={navigateTo} />
         ) : isChallengeDetailRoute ? (
           <ChallengeDetailPage
             challengeId={detailChallengeId}
-            challenges={challenges}
             onSolveChallenge={handleSolveChallenge}
             navigateTo={navigateTo}
             showToast={showToast}
           />
         ) : currentPath === "/leaderboard" ? (
-          <LeaderboardPage userTeamName={userTeam?.name || "Cyber Warriors"} />
+          <LeaderboardPage userTeamName={userTeam?.name || ""} />
         ) : isAdminRoute ? (
           currentPath === "/admin/login" || !isAdminAuthenticated ? (
             <AdminLogin

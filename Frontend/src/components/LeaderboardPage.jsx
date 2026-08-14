@@ -1,47 +1,86 @@
 import React, { useState, useEffect, useMemo } from "react";
 import LeaderboardRow from "./LeaderboardRow";
-import { initialLeaderboard } from "../data/leaderboard";
 import { api } from "../services/api";
 
-export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
-  const [leaderboardData, setLeaderboardData] = useState(initialLeaderboard);
+function getSecondsUntil(endTime) {
+  if (!endTime) return 0;
+  const diff = Math.floor((new Date(endTime).getTime() - Date.now()) / 1000);
+  return Math.max(0, diff);
+}
+
+function formatTimer(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return {
+    hh: String(hours).padStart(2, "0"),
+    mm: String(minutes).padStart(2, "0"),
+    ss: String(seconds).padStart(2, "0"),
+  };
+}
+
+function getStatusLabel(activeState, status) {
+  if (activeState === "ENDED" || status === "ENDED") {
+    return { text: "COMPETITION ENDED", color: "text-[#FF4D4D] border-[#FF4D4D]/30" };
+  }
+  if (activeState === "NOT_STARTED" || status === "UPCOMING") {
+    return { text: "UPCOMING", color: "text-[#38BDF8] border-[#38BDF8]/30" };
+  }
+  return { text: "COMPETITION LIVE", color: "text-[#39FF14] border-[#39FF14]/30" };
+}
+
+export default function LeaderboardPage({ userTeamName = "", embedded = false }) {
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [stats, setStats] = useState({ teams: 0, challenges: 0, submissions: 0 });
+  const [competition, setCompetition] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("score"); // 'score' | 'solved'
-  const [secondsLeft, setSecondsLeft] = useState(9102);
+  const [sortBy, setSortBy] = useState("score");
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchLeaderboard() {
+    async function fetchData() {
+      setLoading(true);
       try {
-        const res = await api.leaderboard.get();
-        if (res.leaderboard && res.leaderboard.length > 0) {
-          setLeaderboardData(res.leaderboard);
+        const [lbRes, compRes] = await Promise.all([
+          api.leaderboard.get(),
+          api.competition.get(),
+        ]);
+
+        if (lbRes.leaderboard) {
+          setLeaderboardData(lbRes.leaderboard);
+        }
+        if (lbRes.stats) {
+          setStats(lbRes.stats);
+        }
+        if (compRes) {
+          setCompetition(compRes);
+          setSecondsLeft(getSecondsUntil(compRes.endTime));
         }
       } catch (err) {
         console.log("[LEADERBOARD PAGE] API fetch error:", err.message);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchLeaderboard();
+    fetchData();
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!competition?.endTime) return;
 
-  const formatTimer = (totalSeconds) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return {
-      hh: String(hours).padStart(2, "0"),
-      mm: String(minutes).padStart(2, "0"),
-      ss: String(seconds).padStart(2, "0"),
+    const updateTimer = () => {
+      setSecondsLeft(getSecondsUntil(competition.endTime));
     };
-  };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [competition?.endTime]);
 
   const timer = formatTimer(secondsLeft);
+  const statusLabel = getStatusLabel(competition?.activeState, competition?.status);
+  const isEnded = competition?.activeState === "ENDED" || competition?.status === "ENDED";
 
   const processedLeaderboard = useMemo(() => {
     let result = [...leaderboardData];
@@ -60,23 +99,34 @@ export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
       return b.score - a.score;
     });
 
-    return result;
+    return result.map((item, idx) => ({ ...item, rank: idx + 1 }));
   }, [leaderboardData, searchQuery, sortBy]);
 
-  const totalTeams = leaderboardData.length;
-  const totalSubmissions = leaderboardData.reduce((sum, t) => sum + (t.solved || 0) * 7, 87);
+  const sectionClass = embedded
+    ? "space-y-6"
+    : "relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold";
 
   return (
-    <section className="relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold">
-      <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
-      <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
+    <section className={sectionClass}>
+      {!embedded && (
+        <>
+          <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
+        </>
+      )}
 
-      <div className="relative max-w-7xl mx-auto z-10 space-y-8">
+      <div className={`relative ${embedded ? "" : "max-w-7xl mx-auto z-10"} space-y-8`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#242424] pb-6">
           <div>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-[#111111] border border-[#39FF14]/30 rounded-full mb-3 text-xs text-[#39FF14] tracking-widest uppercase shadow-[0_0_10px_rgba(57,255,20,0.1)]">
-              <span className="w-2 h-2 rounded-full bg-[#39FF14] animate-pulse" />
-              <span>&gt; COMPETITION LIVE</span>
+            <div
+              className={`inline-flex items-center space-x-2 px-3 py-1 bg-[#111111] border rounded-full mb-3 text-xs tracking-widest uppercase shadow-[0_0_10px_rgba(57,255,20,0.1)] ${statusLabel.color}`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isEnded ? "bg-[#FF4D4D]" : "bg-[#39FF14] animate-pulse"
+                }`}
+              />
+              <span>&gt; {statusLabel.text}</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-minecraftBold text-[#F5F5F5] tracking-wide mb-2">
               LEADERBOARD
@@ -88,71 +138,41 @@ export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
 
           <div className="bg-[#111111] border border-[#39FF14]/30 px-6 py-3 rounded-sm text-center self-start md:self-auto min-w-[210px]">
             <span className="text-[10px] text-[#8A8A8A] uppercase tracking-widest block mb-1">
-              TIME REMAINING
+              {isEnded ? "COMPETITION ENDED" : "TIME REMAINING"}
             </span>
-            <div className="text-2xl font-minecraftBold text-[#39FF14] tracking-widest">
-              {timer.hh} : {timer.mm} : {timer.ss}
+            <div className={`text-2xl font-minecraftBold tracking-widest ${isEnded ? "text-[#FF4D4D]" : "text-[#39FF14]"}`}>
+              {isEnded ? "00 : 00 : 00" : `${timer.hh} : ${timer.mm} : ${timer.ss}`}
             </div>
-            <div className="flex justify-between text-[9px] text-[#8A8A8A] uppercase tracking-widest mt-1 px-1">
-              <span>HOURS</span>
-              <span>MINUTES</span>
-              <span>SECONDS</span>
-            </div>
+            {!isEnded && (
+              <div className="flex justify-between text-[9px] text-[#8A8A8A] uppercase tracking-widest mt-1 px-1">
+                <span>HOURS</span>
+                <span>MINUTES</span>
+                <span>SECONDS</span>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#8A8A8A] bg-[#111111]/50 border border-[#242424] px-4 py-2 rounded-sm font-mono">
           <div className="flex items-center space-x-1.5">
             <span className="text-[#39FF14]">&gt;</span>
-            <span>RANKING DATABASE: <strong className="text-[#39FF14]">ONLINE</strong></span>
+            <span>
+              TEAMS COMPETING: <strong className="text-[#F5F5F5]">{loading ? "—" : stats.teams}</strong>
+            </span>
           </div>
           <span className="text-[#242424]">|</span>
           <div className="flex items-center space-x-1.5">
             <span className="text-[#39FF14]">&gt;</span>
-            <span>LIVE SCORES: <strong className="text-[#39FF14]">ACTIVE</strong></span>
+            <span>
+              CHALLENGES: <strong className="text-[#F5F5F5]">{loading ? "—" : stats.challenges}</strong>
+            </span>
           </div>
           <span className="text-[#242424]">|</span>
           <div className="flex items-center space-x-1.5">
             <span className="text-[#39FF14]">&gt;</span>
-            <span>TEAMS COMPETING: <strong className="text-[#F5F5F5]">{totalTeams}</strong></span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-          <div className="bg-[#111111] border border-[#242424] p-5 rounded-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs text-[#8A8A8A] uppercase tracking-wider block mb-1">
-                TEAMS
-              </span>
-              <span className="text-3xl font-minecraftBold text-[#F5F5F5]">{totalTeams}</span>
-            </div>
-            <div className="w-10 h-10 rounded border border-[#242424] bg-[#080808] flex items-center justify-center text-[#39FF14] text-sm">
-              &#128101;
-            </div>
-          </div>
-
-          <div className="bg-[#111111] border border-[#242424] p-5 rounded-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs text-[#8A8A8A] uppercase tracking-wider block mb-1">
-                CHALLENGES
-              </span>
-              <span className="text-3xl font-minecraftBold text-[#F5F5F5]">20</span>
-            </div>
-            <div className="w-10 h-10 rounded border border-[#242424] bg-[#080808] flex items-center justify-center text-[#39FF14] text-sm">
-              &#9873;
-            </div>
-          </div>
-
-          <div className="bg-[#111111] border border-[#242424] p-5 rounded-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs text-[#8A8A8A] uppercase tracking-wider block mb-1">
-                SUBMISSIONS
-              </span>
-              <span className="text-3xl font-minecraftBold text-[#39FF14]">{totalSubmissions}</span>
-            </div>
-            <div className="w-10 h-10 rounded border border-[#242424] bg-[#080808] flex items-center justify-center text-[#39FF14] text-sm">
-              &#9889;
-            </div>
+            <span>
+              SUBMISSIONS: <strong className="text-[#39FF14]">{loading ? "—" : stats.submissions}</strong>
+            </span>
           </div>
         </div>
 
@@ -176,9 +196,7 @@ export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
           </div>
 
           <div className="flex items-center space-x-2 self-end sm:self-auto">
-            <span className="text-xs text-[#8A8A8A] uppercase tracking-wider">
-              SORT BY:
-            </span>
+            <span className="text-xs text-[#8A8A8A] uppercase tracking-wider">SORT BY:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -190,34 +208,42 @@ export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
           </div>
         </div>
 
-        {processedLeaderboard.length > 0 ? (
+        {loading ? (
+          <div className="bg-[#111111] border border-[#242424] rounded-sm p-12 text-center">
+            <p className="text-xs text-[#39FF14] font-mono">&gt; LOADING LEADERBOARD...</p>
+          </div>
+        ) : processedLeaderboard.length > 0 ? (
           <div className="bg-[#111111] border border-[#242424] rounded-sm overflow-hidden box-glow-neon">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="hidden md:table-row bg-[#080808] border-b border-[#242424] text-xs text-[#8A8A8A] uppercase tracking-wider">
-                  <th className="px-6 py-3.5">RANK</th>
-                  <th className="px-6 py-3.5">TEAM</th>
-                  <th className="px-6 py-3.5">SCORE</th>
-                  <th className="px-6 py-3.5">SOLVED</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#242424]/40">
-                {processedLeaderboard.map((item) => (
-                  <LeaderboardRow
-                    key={item.team}
-                    teamData={item}
-                    userTeamName={userTeamName}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#080808] border-b border-[#242424] text-xs text-[#8A8A8A] uppercase tracking-wider">
+                    <th className="px-6 py-3.5">RANK</th>
+                    <th className="px-6 py-3.5">TEAM</th>
+                    <th className="px-6 py-3.5">SCORE</th>
+                    <th className="px-6 py-3.5">SOLVED</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#242424]/40">
+                  {processedLeaderboard.map((item) => (
+                    <LeaderboardRow
+                      key={item.id || item.team}
+                      teamData={item}
+                      userTeamName={userTeamName}
+                      variant="desktop"
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div className="md:hidden p-4 space-y-3">
               {processedLeaderboard.map((item) => (
                 <LeaderboardRow
-                  key={item.team}
+                  key={item.id || item.team}
                   teamData={item}
                   userTeamName={userTeamName}
+                  variant="mobile"
                 />
               ))}
             </div>
@@ -228,17 +254,21 @@ export default function LeaderboardPage({ userTeamName = "Cyber Warriors" }) {
               !
             </div>
             <h3 className="text-lg font-minecraftBold text-[#F5F5F5] mb-2 uppercase">
-              NO TEAMS FOUND
+              {searchQuery ? "NO TEAMS FOUND" : "NO TEAMS ON LEADERBOARD"}
             </h3>
             <p className="text-xs text-[#8A8A8A]">
-              Try searching for another team name.
+              {searchQuery
+                ? "Try searching for another team name."
+                : "Teams will appear here once the competition begins."}
             </p>
-            <button
-              onClick={() => setSearchQuery("")}
-              className="mt-6 px-4 py-2 bg-[#080808] border border-[#39FF14]/50 text-[#39FF14] text-xs uppercase tracking-wider rounded-sm hover:bg-[#39FF14] hover:text-[#080808] transition-all cursor-pointer"
-            >
-              CLEAR SEARCH
-            </button>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-6 px-4 py-2 bg-[#080808] border border-[#39FF14]/50 text-[#39FF14] text-xs uppercase tracking-wider rounded-sm hover:bg-[#39FF14] hover:text-[#080808] transition-all cursor-pointer"
+              >
+                CLEAR SEARCH
+              </button>
+            )}
           </div>
         )}
       </div>
