@@ -22,9 +22,24 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((url) => url.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.trim().replace(/\/+$/, "");
+      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes("*")) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS BLOCKED] Origin "${origin}" is not allowed. Allowed origins:`, allowedOrigins);
+        callback(new Error(`CORS policy error: Origin ${origin} not allowed`));
+      }
+    },
     credentials: true,
   })
 );

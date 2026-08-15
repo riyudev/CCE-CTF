@@ -1,5 +1,13 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const getNormalizedApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  url = url.trim().replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
+  }
+  return url;
+};
+
+const API_BASE_URL = getNormalizedApiUrl();
 
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
@@ -53,8 +61,10 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
+  const formattedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const res = await fetch(`${API_BASE_URL}${formattedEndpoint}`, config);
     const data = await res.json();
 
     if (!res.ok) {
@@ -79,8 +89,10 @@ async function uploadRequest(endpoint, formData, method = "POST") {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
+  const formattedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
       method,
       headers,
       body: formData,
