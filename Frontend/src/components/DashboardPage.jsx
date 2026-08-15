@@ -103,6 +103,11 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
     ? Math.round((solvedCount / totalChallengesCount) * 100)
     : 0;
 
+  const leaderId =
+    typeof liveTeam?.leader === "object" ? liveTeam.leader?._id : liveTeam?.leader;
+  const userId = currentUser?.id || currentUser?._id;
+  const isTeamLeader = leaderId && userId && String(leaderId) === String(userId);
+
   return (
     <section className="relative min-h-[calc(100vh-4rem-4rem)] py-8 px-4 sm:px-6 lg:px-8 bg-[#080808] font-spaceMonoBold">
       <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
@@ -305,7 +310,7 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
                 <div className="flex items-center justify-between py-1 border-b border-[#242424]/60">
                   <span className="text-[#8A8A8A]">Your Role</span>
                   <span className="text-[#F5F5F5] font-bold">
-                    {liveTeam?.leader === currentUser?.id ? "Team Leader" : "Participant"}
+                    {isTeamLeader ? "Team Leader" : "Participant"}
                   </span>
                 </div>
 

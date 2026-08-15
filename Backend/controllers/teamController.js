@@ -60,15 +60,21 @@ export const createTeam = async (req, res) => {
       members: [userId],
     });
 
-    // Update user reference
+    // Update user reference and assign team leader role
     currentUser.team = team._id;
+    if (currentUser.role !== "admin") {
+      currentUser.role = "leader";
+    }
     await currentUser.save();
 
     const populatedTeam = await Team.findById(team._id)
       .populate("leader", "name username email")
       .populate("members", "name username email");
 
-    return res.status(201).json({ team: populatedTeam });
+    return res.status(201).json({
+      team: populatedTeam,
+      role: currentUser.role,
+    });
   } catch (error) {
     console.error("[TEAM CONTROLLER] Create Team Error:", error.message);
     return res.status(500).json({ message: "Server error during team creation." });
@@ -113,13 +119,16 @@ export const joinTeam = async (req, res) => {
     await team.save();
 
     currentUser.team = team._id;
+    if (currentUser.role !== "admin") {
+      currentUser.role = "participant";
+    }
     await currentUser.save();
 
     const populatedTeam = await Team.findById(team._id)
       .populate("leader", "name username email")
       .populate("members", "name username email");
 
-    return res.json({ team: populatedTeam });
+    return res.json({ team: populatedTeam, role: currentUser.role });
   } catch (error) {
     console.error("[TEAM CONTROLLER] Join Team Error:", error.message);
     return res.status(500).json({ message: "Server error joining team." });
@@ -158,6 +167,9 @@ export const leaveTeam = async (req, res) => {
     const team = await Team.findById(currentUser.team);
     if (!team) {
       currentUser.team = null;
+      if (currentUser.role !== "admin") {
+        currentUser.role = "participant";
+      }
       await currentUser.save();
       return res.json({ message: "Left team successfully." });
     }
@@ -176,6 +188,9 @@ export const leaveTeam = async (req, res) => {
     await team.save();
 
     currentUser.team = null;
+    if (currentUser.role !== "admin") {
+      currentUser.role = "participant";
+    }
     await currentUser.save();
 
     return res.json({ message: "Left team successfully." });

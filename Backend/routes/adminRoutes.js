@@ -13,6 +13,7 @@ import {
   updateAdminCompetitionSettings,
 } from "../controllers/adminController.js";
 import { protect, requireAdmin } from "../middleware/authMiddleware.js";
+import { challengeFileUpload } from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -28,8 +29,8 @@ router.delete("/teams/:id", deleteAdminTeam);
 
 // Challenge CRUD
 router.get("/challenges", getAdminChallenges);
-router.post("/challenges", createAdminChallenge);
-router.put("/challenges/:id", updateAdminChallenge);
+router.post("/challenges", challengeFileUpload.single("file"), createAdminChallenge);
+router.put("/challenges/:id", challengeFileUpload.single("file"), updateAdminChallenge);
 router.delete("/challenges/:id", deleteAdminChallenge);
 
 // Submission Monitoring

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { api } from "../services/api";
+import { api, getFileDownloadUrl, getStoredUser } from "../services/api";
 
 export default function ChallengeDetailPage({
   challengeId,
@@ -109,10 +109,13 @@ export default function ChallengeDetailPage({
   const isSolved = challenge.solved || isAlreadySolved || submissionResult === "correct";
 
   const handleDownload = () => {
-    const filename = fileUrl || file?.name || "challenge_files.zip";
-    if (showToast) {
-      showToast(`[DOWNLOAD] Downloading ${filename}...`);
+    const downloadUrl = getFileDownloadUrl(fileUrl);
+    if (!downloadUrl) {
+      if (showToast) showToast("No file available for this challenge.");
+      return;
     }
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    if (showToast) showToast(`Downloading ${fileUrl.split("/").pop()}...`);
   };
 
   const handleSubmitFlag = async (e) => {

@@ -1,8 +1,19 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
+export const getFileDownloadUrl = (fileUrl) => {
+  if (!fileUrl) return null;
+  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+    return fileUrl;
+  }
+  return `${API_ORIGIN}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
+};
+
 // Token & User session helpers
 export const getToken = () => localStorage.getItem("cce_ctf_token");
+
 export const setToken = (token) => {
   if (token) {
     localStorage.setItem("cce_ctf_token", token);
@@ -57,6 +68,36 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (error) {
     console.error(`[API ERROR ${endpoint}]:`, error.message);
+    throw error;
+  }
+}
+
+// Multipart upload for challenge files
+async function uploadRequest(endpoint, formData, method = "POST") {
+  const token = getToken();
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method,
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        setToken(null);
+        setStoredUser(null);
+      }
+      throw new Error(data.message || "Upload request failed");
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`[API UPLOAD ERROR ${endpoint}]:`, error.message);
     throw error;
   }
 }
@@ -125,16 +166,9 @@ export const api = {
     getTeams: () => request("/admin/teams"),
     deleteTeam: (id) => request(`/admin/teams/${id}`, { method: "DELETE" }),
     getChallenges: () => request("/admin/challenges"),
-    createChallenge: (data) =>
-      request("/admin/challenges", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    updateChallenge: (id, data) =>
-      request(`/admin/challenges/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+    createChallenge: (formData) => uploadRequest("/admin/challenges", formData, "POST"),
+    updateChallenge: (id, formData) =>
+      uploadRequest(`/admin/challenges/${id}`, formData, "PUT"),
     deleteChallenge: (id) =>
       request(`/admin/challenges/${id}`, { method: "DELETE" }),
     getSubmissions: () => request("/admin/submissions"),

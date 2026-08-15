@@ -119,7 +119,9 @@ export default function AdminUsers({ currentPath, navigateTo, onLogout }) {
                           className={`px-2 py-0.5 rounded ${
                             u.role === "admin"
                               ? "bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/30"
-                              : "bg-[#080808] text-[#8A8A8A] border border-[#242424]"
+                              : u.role === "leader"
+                                ? "bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/30"
+                                : "bg-[#080808] text-[#8A8A8A] border border-[#242424]"
                           }`}
                         >
                           {u.role}

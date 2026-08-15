@@ -1,14 +1,52 @@
+import fs from "fs";
+import path from "path";
 import { User } from "../models/User.js";
 import { Team } from "../models/Team.js";
 import { Challenge } from "../models/Challenge.js";
 import { Submission } from "../models/Submission.js";
 import { Competition } from "../models/Competition.js";
+import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
+
+const resolveFileUrl = (req) => {
+  if (req.file) {
+    return `/uploads/challenges/${req.file.filename}`;
+  }
+  const manualUrl = req.body.fileUrl?.trim();
+  return manualUrl || null;
+};
+
+const deleteStoredFile = (fileUrl) => {
+  if (!fileUrl || !fileUrl.startsWith("/uploads/challenges/")) return;
+  const filename = path.basename(fileUrl);
+  const filePath = getChallengeFilePath(filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
 
 // --- USERS ---
 export const getAdminUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password").populate("team", "name code");
-    return res.json({ users });
+    const users = await User.find()
+      .select("-password")
+      .populate("team", "name code leader");
+
+    const formattedUsers = await Promise.all(
+      users.map(async (user) => {
+        const obj = user.toObject();
+        if (obj.role !== "admin" && obj.team?.leader) {
+          const correctRole =
+            String(obj.team.leader) === String(obj._id) ? "leader" : "participant";
+          if (obj.role !== correctRole) {
+            await User.findByIdAndUpdate(obj._id, { role: correctRole });
+          }
+          obj.role = correctRole;
+        }
+        return obj;
+      })
+    );
+
+    return res.json({ users: formattedUsers });
   } catch (error) {
     return res.status(500).json({ message: "Error fetching users for admin." });
   }
@@ -47,7 +85,10 @@ export const getAdminTeams = async (req, res) => {
 export const deleteAdminTeam = async (req, res) => {
   try {
     const teamId = req.params.id;
-    await User.updateMany({ team: teamId }, { $set: { team: null } });
+    await User.updateMany(
+      { team: teamId, role: { $ne: "admin" } },
+      { $set: { team: null, role: "participant" } }
+    );
     await Team.findByIdAndDelete(teamId);
     return res.json({ message: "Team deleted successfully." });
   } catch (error) {
@@ -67,7 +108,12 @@ export const getAdminChallenges = async (req, res) => {
 
 export const createAdminChallenge = async (req, res) => {
   try {
-    const { title, category, difficulty, points, description, flag, fileUrl } = req.body;
+    const { title, category, difficulty, points, description, flag } = req.body;
+    const isActive =
+      req.body.isActive === undefined
+        ? true
+        : req.body.isActive === true || req.body.isActive === "true";
+
     if (!title || !category || !difficulty || !points || !description || !flag) {
       return res.status(400).json({ message: "All challenge fields are required." });
     }
@@ -79,7 +125,8 @@ export const createAdminChallenge = async (req, res) => {
       points: Number(points),
       description: description.trim(),
       flag: flag.trim(),
-      fileUrl: fileUrl || null,
+      fileUrl: resolveFileUrl(req),
+      isActive,
     });
 
     return res.status(201).json({ challenge });
@@ -90,7 +137,7 @@ export const createAdminChallenge = async (req, res) => {
 
 export const updateAdminChallenge = async (req, res) => {
   try {
-    const { title, category, difficulty, points, description, flag, fileUrl, isActive } = req.body;
+    const { title, category, difficulty, points, description, flag, isActive } = req.body;
     const challenge = await Challenge.findById(req.params.id).select("+flag");
     if (!challenge) {
       return res.status(404).json({ message: "Challenge not found." });
@@ -102,8 +149,20 @@ export const updateAdminChallenge = async (req, res) => {
     if (points !== undefined) challenge.points = Number(points);
     if (description) challenge.description = description.trim();
     if (flag) challenge.flag = flag.trim();
-    if (fileUrl !== undefined) challenge.fileUrl = fileUrl;
-    if (isActive !== undefined) challenge.isActive = isActive;
+    if (isActive !== undefined) {
+      challenge.isActive = isActive === true || isActive === "true";
+    }
+
+    if (req.file) {
+      deleteStoredFile(challenge.fileUrl);
+      challenge.fileUrl = `/uploads/challenges/${req.file.filename}`;
+    } else if (req.body.fileUrl !== undefined) {
+      const nextUrl = req.body.fileUrl?.trim() || null;
+      if (!nextUrl && challenge.fileUrl) {
+        deleteStoredFile(challenge.fileUrl);
+      }
+      challenge.fileUrl = nextUrl;
+    }
 
     await challenge.save();
     return res.json({ challenge });
@@ -114,6 +173,10 @@ export const updateAdminChallenge = async (req, res) => {
 
 export const deleteAdminChallenge = async (req, res) => {
   try {
+    const challenge = await Challenge.findById(req.params.id);
+    if (challenge?.fileUrl) {
+      deleteStoredFile(challenge.fileUrl);
+    }
     await Challenge.findByIdAndDelete(req.params.id);
     return res.json({ message: "Challenge deleted successfully." });
   } catch (error) {
@@ -157,6 +220,17 @@ export const updateAdminCompetitionSettings = async (req, res) => {
     } else {
       Object.assign(settings, req.body);
     }
+
+    const now = new Date();
+
+    // When admin starts the competition, mark start time as now if still in the future
+    if (req.body.status === "LIVE") {
+      const start = settings.startTime ? new Date(settings.startTime) : null;
+      if (!start || isNaN(start.getTime()) || start > now) {
+        settings.startTime = now.toISOString();
+      }
+    }
+
     await settings.save();
     return res.json({ competition: settings });
   } catch (error) {

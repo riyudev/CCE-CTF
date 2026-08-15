@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
-import HighlightsSection from "./components/HighlightsSection";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import TeamSetupPage from "./components/TeamSetupPage";
@@ -260,7 +259,6 @@ function App() {
               onJoinClick={() => navigateTo("/register")}
               onViewLeaderboardClick={() => navigateTo("/leaderboard")}
             />
-            <HighlightsSection onCardClick={(id) => navigateTo(`/${id}`)} />
           </>
         )}
       </main>

@@ -1,5 +1,7 @@
-import dotenv from "dotenv";
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -8,6 +10,8 @@ import challengeRoutes from "./routes/challengeRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import competitionRoutes from "./routes/competitionRoutes.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
@@ -25,6 +29,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -46,8 +51,11 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error("[SERVER ERROR]", err.stack);
-  res.status(500).json({ message: err.message || "Internal Server Error" });
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ message: "File too large. Maximum upload size is 50MB." });
+  }
+  console.error("[SERVER ERROR]", err.stack || err.message);
+  res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
 });
 
 // Start listening

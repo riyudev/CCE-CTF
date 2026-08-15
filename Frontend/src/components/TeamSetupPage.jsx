@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import InputField from "./InputField";
-import { api } from "../services/api";
+import { api, getStoredUser, setStoredUser } from "../services/api";
 
 export default function TeamSetupPage({
   userTeam,
@@ -65,6 +65,10 @@ export default function TeamSetupPage({
       if (res.team) {
         setCreatedTeamData(res.team);
         setUserTeam(res.team);
+        const stored = getStoredUser();
+        if (stored && stored.role !== "admin") {
+          setStoredUser({ ...stored, role: res.role || "leader" });
+        }
         if (showToast) showToast("Team created successfully!");
       }
     } catch (err) {
@@ -91,6 +95,10 @@ export default function TeamSetupPage({
       if (res.team) {
         setJoinedTeamData(res.team);
         setUserTeam(res.team);
+        const stored = getStoredUser();
+        if (stored && stored.role !== "admin" && res.role) {
+          setStoredUser({ ...stored, role: res.role });
+        }
         if (showToast) showToast("Joined team successfully!");
       }
     } catch (err) {
@@ -122,6 +130,15 @@ export default function TeamSetupPage({
   // VIEW 1: User already in a team (YOUR TEAM)
   if (userTeam) {
     const memberCount = userTeam.members ? userTeam.members.length : 1;
+    const currentUser = getStoredUser();
+    const leaderId =
+      typeof userTeam.leader === "object" ? userTeam.leader?._id : userTeam.leader;
+    const isLeader =
+      leaderId &&
+      (String(leaderId) === String(currentUser?.id) ||
+        String(leaderId) === String(currentUser?._id));
+    const roleLabel = isLeader ? "Team Leader" : "Participant";
+
     return (
       <section className="relative min-h-[calc(100vh-4rem-4rem)] py-12 px-4 sm:px-6 lg:px-8 bg-[#080808]">
         <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
@@ -151,7 +168,7 @@ export default function TeamSetupPage({
               <div className="inline-flex items-center space-x-2 self-start sm:self-auto bg-[#080808] px-3 py-1.5 border border-[#39FF14]/40 rounded-sm">
                 <span className="text-xs text-[#8A8A8A]">Role:</span>
                 <span className="text-xs font-bold text-[#F5F5F5] uppercase">
-                  {userTeam.role || "Participant"}
+                  {roleLabel}
                 </span>
               </div>
             </div>

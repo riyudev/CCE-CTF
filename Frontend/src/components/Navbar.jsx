@@ -54,28 +54,30 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
-              const isActive = currentPath === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavClick(item.path)}
-                  className={`text-sm tracking-wider uppercase transition-colors relative py-1 cursor-pointer ${
-                    isActive
-                      ? "text-[#39FF14] font-bold"
-                      : "text-[#8A8A8A] hover:text-[#F5F5F5]"
-                  }`}
-                >
-                  {item.name}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#39FF14] shadow-[0_0_8px_#39FF14]" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+          {/* Desktop Navigation Links — logged-in users only */}
+          {isLoggedIn && (
+            <nav className="hidden md:flex items-center space-x-8">
+              {navItems.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavClick(item.path)}
+                    className={`text-sm tracking-wider uppercase transition-colors relative py-1 cursor-pointer ${
+                      isActive
+                        ? "text-[#39FF14] font-bold"
+                        : "text-[#8A8A8A] hover:text-[#F5F5F5]"
+                    }`}
+                  >
+                    {item.name}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#39FF14] shadow-[0_0_8px_#39FF14]" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right Side: User Profile & LOGOUT or LOGIN */}
           <div className="hidden md:flex items-center space-x-4">
@@ -106,43 +108,56 @@ export default function Navbar({
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile: login when logged out, menu toggle when logged in */}
           <div className="flex md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              type="button"
-              className="text-[#8A8A8A] hover:text-[#39FF14] focus:outline-none p-2 rounded-sm border border-[#242424] bg-[#111111]"
-              aria-label="Toggle Menu"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {isLoggedIn ? (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                type="button"
+                className="text-[#8A8A8A] hover:text-[#39FF14] focus:outline-none p-2 rounded-sm border border-[#242424] bg-[#111111]"
+                aria-label="Toggle Menu"
               >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {mobileMenuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleNavClick("/login")}
+                className={`text-xs uppercase tracking-widest px-4 py-2 rounded-sm border transition-all duration-200 cursor-pointer ${
+                  currentPath === "/login"
+                    ? "bg-[#39FF14] text-[#080808] border-[#39FF14] font-bold shadow-[0_0_12px_rgba(57,255,20,0.4)]"
+                    : "bg-[#111111] text-[#39FF14] border-[#39FF14]/50 hover:bg-[#39FF14] hover:text-[#080808]"
+                }`}
+              >
+                [ LOGIN ]
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
-      {mobileMenuOpen && (
+      {/* Mobile Drawer Navigation — logged-in users only */}
+      {isLoggedIn && mobileMenuOpen && (
         <div className="md:hidden bg-[#111111] border-b border-[#242424] px-4 pt-2 pb-6 space-y-3">
           {navItems.map((item) => {
             const isActive = currentPath === item.path;
@@ -161,21 +176,12 @@ export default function Navbar({
             );
           })}
           <div className="pt-2 border-t border-[#242424]">
-            {isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="w-full text-center py-2.5 bg-[#111111] text-[#FF4D4D] border border-[#FF4D4D]/50 font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#FF4D4D] hover:text-[#080808] transition-colors"
-              >
-                LOGOUT ({currentUser.toUpperCase()})
-              </button>
-            ) : (
-              <button
-                onClick={() => handleNavClick("/login")}
-                className="w-full text-center py-2.5 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#39FF14]/90 transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]"
-              >
-                [ LOGIN ]
-              </button>
-            )}
+            <button
+              onClick={handleLogout}
+              className="w-full text-center py-2.5 bg-[#111111] text-[#FF4D4D] border border-[#FF4D4D]/50 font-bold text-xs uppercase tracking-widest rounded-sm hover:bg-[#FF4D4D] hover:text-[#080808] transition-colors"
+            >
+              LOGOUT ({currentUser.toUpperCase()})
+            </button>
           </div>
         </div>
       )}

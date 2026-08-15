@@ -22,6 +22,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
     fileUrl: "",
     isActive: true,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Delete Confirmation state
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -58,6 +59,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
       fileUrl: "",
       isActive: true,
     });
+    setSelectedFile(null);
     setShowModal(true);
   };
 
@@ -70,9 +72,10 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
       points: c.points || 100,
       description: c.description || "",
       flag: c.flag || "",
-      fileUrl: c.fileUrl || c.file?.name || "",
+      fileUrl: c.fileUrl || "",
       isActive: c.isActive !== undefined ? c.isActive : true,
     });
+    setSelectedFile(null);
     setShowModal(true);
   };
 
@@ -93,21 +96,27 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
     setErrorMsg(null);
 
     try {
-      const payload = {
-        title: formData.title.trim(),
-        category: formData.category,
-        difficulty: formData.difficulty,
-        points: Number(formData.points),
-        description: formData.description.trim(),
-        flag: formData.flag.trim(),
-        fileUrl: formData.fileUrl.trim() || null,
-        isActive: formData.isActive,
-      };
+      const formPayload = new FormData();
+      formPayload.append("title", formData.title.trim());
+      formPayload.append("category", formData.category);
+      formPayload.append("difficulty", formData.difficulty);
+      formPayload.append("points", String(Number(formData.points)));
+      formPayload.append("description", formData.description.trim());
+      formPayload.append("flag", formData.flag.trim());
+      formPayload.append("isActive", String(formData.isActive));
+
+      if (selectedFile) {
+        formPayload.append("file", selectedFile);
+      } else if (formData.fileUrl.trim()) {
+        formPayload.append("fileUrl", formData.fileUrl.trim());
+      } else if (editingChallenge) {
+        formPayload.append("fileUrl", formData.fileUrl.trim());
+      }
 
       if (editingChallenge) {
-        await api.admin.updateChallenge(editingChallenge._id || editingChallenge.id, payload);
+        await api.admin.updateChallenge(editingChallenge._id || editingChallenge.id, formPayload);
       } else {
-        await api.admin.createChallenge(payload);
+        await api.admin.createChallenge(formPayload);
       }
 
       setShowModal(false);
@@ -333,15 +342,30 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
 
               <div className="space-y-1">
                 <label className="text-xs uppercase text-[#8A8A8A] tracking-wider block">
-                  Challenge File Name or Download URL (Optional)
+                  Challenge File (Optional)
                 </label>
                 <input
-                  type="text"
-                  placeholder="e.g. challenge.zip"
-                  value={formData.fileUrl}
-                  onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                  className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] text-xs rounded-sm px-3 py-2 outline-none"
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedFile(file);
+                    if (file) setFormData((prev) => ({ ...prev, fileUrl: "" }));
+                  }}
+                  className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] text-xs rounded-sm px-3 py-2 outline-none file:mr-3 file:py-1 file:px-2 file:rounded-sm file:border-0 file:bg-[#39FF14] file:text-[#080808] file:font-bold file:text-[10px] file:uppercase"
                 />
+                {selectedFile && (
+                  <p className="text-[10px] text-[#39FF14] font-mono pt-1">
+                    Selected: {selectedFile.name}
+                  </p>
+                )}
+                {!selectedFile && formData.fileUrl && (
+                  <p className="text-[10px] text-[#8A8A8A] font-mono pt-1">
+                    Current file: {formData.fileUrl.split("/").pop()}
+                  </p>
+                )}
+                <p className="text-[10px] text-[#555555] pt-1">
+                  Upload .zip, .txt, .pcap, binaries, or other challenge assets (max 50MB).
+                </p>
               </div>
 
               <div className="flex items-center space-x-2 pt-1">

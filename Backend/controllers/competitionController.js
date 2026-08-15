@@ -18,9 +18,8 @@ export const getCompetitionState = async () => {
   } else if (competition.status === "UPCOMING") {
     activeState = "NOT_STARTED";
   } else if (competition.status === "LIVE") {
-    if (startTime && !isNaN(startTime.getTime()) && now < startTime) {
-      activeState = "NOT_STARTED";
-    } else if (endTime && !isNaN(endTime.getTime()) && now >= endTime) {
+    // Admin "LIVE" is authoritative — only auto-end when past endTime
+    if (endTime && !isNaN(endTime.getTime()) && now >= endTime) {
       activeState = "ENDED";
     } else {
       activeState = "LIVE";
