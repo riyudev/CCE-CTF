@@ -1,13 +1,13 @@
 import React from "react";
 
 const menuItems = [
-  { name: "Dashboard", path: "/admin" },
-  { name: "Users", path: "/admin/users" },
-  { name: "Teams", path: "/admin/teams" },
-  { name: "Challenges", path: "/admin/challenges" },
-  { name: "Submissions", path: "/admin/submissions" },
-  { name: "Leaderboard", path: "/admin/leaderboard" },
-  { name: "Competition", path: "/admin/competition" },
+  { name: "Dashboard", path: "/dashboard", altPath: "/admin" },
+  { name: "Users", path: "/users", altPath: "/admin/users" },
+  { name: "Teams", path: "/teams", altPath: "/admin/teams" },
+  { name: "Challenges", path: "/challenges", altPath: "/admin/challenges" },
+  { name: "Submissions", path: "/submissions", altPath: "/admin/submissions" },
+  { name: "Leaderboard", path: "/leaderboard", altPath: "/admin/leaderboard" },
+  { name: "Competition", path: "/competition", altPath: "/admin/competition" },
 ];
 
 export default function AdminSidebar({ currentPath, navigateTo, onLogout }) {
@@ -19,19 +19,22 @@ export default function AdminSidebar({ currentPath, navigateTo, onLogout }) {
     if (onLogout) {
       onLogout();
     } else {
-      navigateTo("/admin/login");
+      navigateTo("/login");
     }
   };
 
   return (
     <aside className="fixed left-0 top-0 z-50 h-screen w-64 bg-[#111111] border-r border-[#242424] flex flex-col font-spaceMonoBold">
       {/* Admin Header */}
-      <div className="flex items-center space-x-3 px-3 py-4 border-b border-[#242424] shrink-0">
-        <div className="w-8 h-8 rounded border border-[#39FF14]/40 bg-[#080808] flex items-center justify-center text-[#39FF14] font-bold shadow-[0_0_8px_rgba(57,255,20,0.15)]">
+      <div
+        onClick={() => handleLinkClick("/dashboard")}
+        className="flex items-center space-x-3 px-4 py-4 border-b border-[#242424] shrink-0 cursor-pointer group"
+      >
+        <div className="w-8 h-8 rounded border border-[#39FF14]/40 bg-[#080808] flex items-center justify-center text-[#39FF14] font-bold group-hover:border-[#39FF14] transition-colors shadow-[0_0_8px_rgba(57,255,20,0.15)]">
           <span className="text-sm font-minecraftBold">&gt;_</span>
         </div>
         <div>
-          <h2 className="text-sm font-minecraftBold text-[#F5F5F5] tracking-wider uppercase">
+          <h2 className="text-sm font-minecraftBold text-[#F5F5F5] tracking-wider uppercase group-hover:text-[#39FF14] transition-colors">
             CCE ADMIN
           </h2>
           <span className="text-[10px] text-[#39FF14] block">PORTAL v2026</span>
@@ -41,7 +44,11 @@ export default function AdminSidebar({ currentPath, navigateTo, onLogout }) {
       {/* Navigation Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5">
         {menuItems.map((item) => {
-          const isActive = currentPath === item.path;
+          const isActive =
+            currentPath === item.path ||
+            currentPath === item.altPath ||
+            (item.path === "/dashboard" && (currentPath === "/" || currentPath === ""));
+
           return (
             <button
               key={item.path}

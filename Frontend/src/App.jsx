@@ -8,14 +8,6 @@ import DashboardPage from "./components/DashboardPage";
 import ChallengesPage from "./components/ChallengesPage";
 import ChallengeDetailPage from "./components/ChallengeDetailPage";
 import LeaderboardPage from "./components/LeaderboardPage";
-import AdminLogin from "./components/admin/AdminLogin";
-import AdminDashboard from "./components/admin/AdminDashboard";
-import AdminUsers from "./components/admin/AdminUsers";
-import AdminTeams from "./components/admin/AdminTeams";
-import AdminChallenges from "./components/admin/AdminChallenges";
-import AdminSubmissions from "./components/admin/AdminSubmissions";
-import AdminLeaderboard from "./components/admin/AdminLeaderboard";
-import AdminCompetition from "./components/admin/AdminCompetition";
 import Footer from "./components/Footer";
 import { initialChallenges } from "./data/challenges";
 import { api, getToken, setToken, getStoredUser, setStoredUser } from "./services/api";
@@ -37,9 +29,6 @@ function App() {
 
   // Global challenge state persistent across navigation
   const [challenges, setChallenges] = useState(initialChallenges);
-
-  // Global admin competition state (loaded from API when admin is authenticated)
-  const [competitionSettings, setCompetitionSettings] = useState(null);
 
   // Load authenticated user session on mount
   useEffect(() => {
@@ -128,8 +117,6 @@ function App() {
     : null;
 
   const isAdminRoute = currentPath.startsWith("/admin");
-  const isAdminAuthenticated =
-    isLoggedIn && currentUser?.role === "admin" && Boolean(getToken());
 
   if (isAuthLoading) {
     return (
@@ -208,46 +195,20 @@ function App() {
         ) : currentPath === "/leaderboard" ? (
           <LeaderboardPage userTeamName={userTeam?.name || ""} />
         ) : isAdminRoute ? (
-          currentPath === "/admin/login" || !isAdminAuthenticated ? (
-            <AdminLogin
-              onAdminLogin={(user) => {
-                setIsLoggedIn(true);
-                setCurrentUser(user || { name: "Admin", username: "admin", role: "admin" });
-                navigateTo("/admin");
-              }}
-            />
-          ) : currentPath === "/admin/users" ? (
-            <AdminUsers currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
-          ) : currentPath === "/admin/teams" ? (
-            <AdminTeams currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
-          ) : currentPath === "/admin/challenges" ? (
-            <AdminChallenges
-              currentPath={currentPath}
-              navigateTo={navigateTo}
-              onLogout={handleLogout}
-              setChallenges={setChallenges}
-            />
-          ) : currentPath === "/admin/submissions" ? (
-            <AdminSubmissions currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
-          ) : currentPath === "/admin/leaderboard" ? (
-            <AdminLeaderboard currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
-          ) : currentPath === "/admin/competition" ? (
-            <AdminCompetition
-              currentPath={currentPath}
-              navigateTo={navigateTo}
-              onLogout={handleLogout}
-              competitionSettings={competitionSettings}
-              setCompetitionSettings={setCompetitionSettings}
-            />
-          ) : (
-            <AdminDashboard
-              currentPath={currentPath}
-              navigateTo={navigateTo}
-              onLogout={handleLogout}
-              competitionSettings={competitionSettings}
-              setCompetitionSettings={setCompetitionSettings}
-            />
-          )
+          <div className="min-h-[70vh] flex items-center justify-center p-6 text-center">
+            <div className="max-w-md bg-[#111111] border border-[#39FF14]/40 p-8 rounded-sm space-y-4 box-glow-neon">
+              <div className="text-[#39FF14] text-xl font-minecraftBold uppercase">&gt; STANDALONE ADMIN PORTAL</div>
+              <p className="text-xs text-[#8A8A8A] leading-relaxed">
+                The Admin Management Console is now hosted as an independent web application.
+              </p>
+              <button
+                onClick={() => navigateTo("/")}
+                className="w-full py-2.5 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase rounded-sm hover:bg-[#39FF14]/90 cursor-pointer"
+              >
+                RETURN TO HOME
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             <HeroSection

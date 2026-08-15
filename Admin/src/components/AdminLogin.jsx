@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import InputField from "../InputField";
-import { api, setToken, setStoredUser } from "../../services/api";
+import InputField from "./InputField";
+import { api, setToken, setStoredUser } from "../services/api";
 
 export default function AdminLogin({ onAdminLogin }) {
   const [username, setUsername] = useState("");

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
-import { api } from "../../services/api";
+import { api } from "../services/api";
 
 export default function AdminDashboard({
   currentPath,
@@ -163,13 +163,6 @@ export default function AdminDashboard({
             Competition management and monitoring.
           </p>
         </div>
-
-        <button
-          onClick={() => navigateTo("/")}
-          className="self-start md:self-auto px-4 py-2 bg-[#111111] text-[#39FF14] border border-[#39FF14]/40 text-xs font-bold uppercase tracking-wider rounded-sm hover:bg-[#39FF14] hover:text-[#080808] transition-all cursor-pointer"
-        >
-          VIEW PARTICIPANT SITE &rarr;
-        </button>
       </div>
 
       {errorMsg && (
@@ -269,8 +262,8 @@ export default function AdminDashboard({
             RECENT SUBMISSIONS
           </h3>
           <button
-            onClick={() => navigateTo("/admin/submissions")}
-            className="text-xs text-[#39FF14] hover:underline uppercase tracking-wider"
+            onClick={() => navigateTo("/submissions")}
+            className="text-xs text-[#39FF14] hover:underline uppercase tracking-wider cursor-pointer"
           >
             VIEW ALL SUBMISSIONS &rarr;
           </button>

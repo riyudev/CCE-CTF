@@ -22,10 +22,20 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",")
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:3000",
+];
+
+const envOrigins = [process.env.CLIENT_URL, process.env.ADMIN_URL]
+  .filter(Boolean)
+  .flatMap((url) => url.split(","))
   .map((url) => url.trim().replace(/\/+$/, ""))
   .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 app.use(
   cors({

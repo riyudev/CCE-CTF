@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
-import { api } from "../../services/api";
+import { api } from "../services/api";
 
 export default function AdminSubmissions({ currentPath, navigateTo, onLogout }) {
   const [submissions, setSubmissions] = useState([]);

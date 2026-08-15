@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
-import { api } from "../../services/api";
+import { api } from "../services/api";
 
 export default function AdminTeams({ currentPath, navigateTo, onLogout }) {
   const [teams, setTeams] = useState([]);
@@ -149,7 +149,7 @@ export default function AdminTeams({ currentPath, navigateTo, onLogout }) {
               </h3>
               <button
                 onClick={() => setSelectedTeamModal(null)}
-                className="text-[#8A8A8A] hover:text-[#FF4D4D] text-sm"
+                className="text-[#8A8A8A] hover:text-[#FF4D4D] text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -186,7 +186,7 @@ export default function AdminTeams({ currentPath, navigateTo, onLogout }) {
             <div className="pt-2">
               <button
                 onClick={() => setSelectedTeamModal(null)}
-                className="w-full py-2 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase rounded-sm hover:bg-[#39FF14]/90"
+                className="w-full py-2 bg-[#39FF14] text-[#080808] font-bold text-xs uppercase rounded-sm hover:bg-[#39FF14]/90 cursor-pointer"
               >
                 CLOSE
               </button>

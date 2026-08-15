@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
-import InputField from "../InputField";
-import { api } from "../../services/api";
+import InputField from "./InputField";
+import { api } from "../services/api";
 
 export default function AdminChallenges({ currentPath, navigateTo, onLogout, setChallenges }) {
   const [challengesList, setChallengesList] = useState([]);
@@ -257,7 +257,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-[#8A8A8A] hover:text-[#FF4D4D] text-sm"
+                className="text-[#8A8A8A] hover:text-[#FF4D4D] text-sm cursor-pointer"
               >
                 ✕
               </button>
