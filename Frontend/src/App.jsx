@@ -22,10 +22,16 @@ import { api, getToken, setToken, getStoredUser, setStoredUser } from "./service
 import "./App.css";
 
 function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
+  const getCleanPath = (path) => {
+    if (!path) return "/";
+    const clean = path.toLowerCase().replace(/\/+$/, "");
+    return clean === "" ? "/" : clean;
+  };
+
+  const [currentPath, setCurrentPath] = useState(() => getCleanPath(window.location.pathname));
   const [toastMessage, setToastMessage] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
-  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken() || getStoredUser()));
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken() && getStoredUser()));
   const [userTeam, setUserTeam] = useState(() => getStoredUser()?.team || null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
@@ -39,10 +45,8 @@ function App() {
   useEffect(() => {
     async function loadAuth() {
       const token = getToken();
-      const stored = getStoredUser();
 
-      // Clear legacy demo token that cannot pass JWT validation
-      if (token === "demo_admin_token_2026") {
+      if (!token || token === "demo_admin_token_2026") {
         setToken(null);
         setStoredUser(null);
         setCurrentUser(null);
@@ -51,30 +55,26 @@ function App() {
         return;
       }
 
-      if (stored) {
-        setCurrentUser(stored);
-        setIsLoggedIn(true);
-        if (stored.team) setUserTeam(stored.team);
-      }
-
-      if (token) {
-        try {
-          const res = await api.auth.getMe();
-          if (res.user) {
-            setCurrentUser(res.user);
-            setIsLoggedIn(true);
-            setStoredUser(res.user);
-            if (res.user.team) setUserTeam(res.user.team);
-          }
-        } catch (err) {
-          console.log("[APP] Auth restore failed:", err.message);
-          setToken(null);
-          setStoredUser(null);
-          setCurrentUser(null);
-          setIsLoggedIn(false);
+      try {
+        const res = await api.auth.getMe();
+        if (res.user) {
+          setCurrentUser(res.user);
+          setIsLoggedIn(true);
+          setStoredUser(res.user);
+          if (res.user.team) setUserTeam(res.user.team);
+        } else {
+          throw new Error("Invalid user session");
         }
+      } catch (err) {
+        console.log("[APP] Auth restore failed:", err.message);
+        setToken(null);
+        setStoredUser(null);
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+        setUserTeam(null);
+      } finally {
+        setIsAuthLoading(false);
       }
-      setIsAuthLoading(false);
     }
     loadAuth();
   }, []);
@@ -82,7 +82,7 @@ function App() {
   // Sync state with browser navigation back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || "/");
+      setCurrentPath(getCleanPath(window.location.pathname));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -96,10 +96,11 @@ function App() {
   };
 
   const navigateTo = (path) => {
-    if (path === currentPath) return;
+    const cleanPath = getCleanPath(path);
+    if (cleanPath === currentPath) return;
 
-    setCurrentPath(path);
-    window.history.pushState({}, "", path);
+    setCurrentPath(cleanPath);
+    window.history.pushState({}, "", cleanPath);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -148,7 +149,7 @@ function App() {
         <Navbar
           currentPath={currentPath}
           navigateTo={navigateTo}
-          currentUser={currentUser?.username || currentUser?.name || "Reyu"}
+          currentUser={currentUser?.username || currentUser?.name || ""}
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
         />
@@ -166,10 +167,7 @@ function App() {
       <main className="flex-1">
         {currentPath === "/login" ? (
           <LoginPage
-            navigateTo={(path) => {
-              setIsLoggedIn(true);
-              navigateTo(path);
-            }}
+            navigateTo={navigateTo}
             onAuthSuccess={(user) => {
               setCurrentUser(user);
               setIsLoggedIn(true);
@@ -178,10 +176,7 @@ function App() {
           />
         ) : currentPath === "/register" ? (
           <RegisterPage
-            navigateTo={(path) => {
-              setIsLoggedIn(true);
-              navigateTo(path);
-            }}
+            navigateTo={navigateTo}
             onAuthSuccess={(user) => {
               setCurrentUser(user);
               setIsLoggedIn(true);

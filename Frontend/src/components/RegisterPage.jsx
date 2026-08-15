@@ -77,6 +77,9 @@ export default function RegisterPage({ navigateTo, onAuthSuccess }) {
       if (res.token) {
         setToken(res.token);
       }
+      if (res.user) {
+        setStoredUser(res.user);
+      }
 
       if (onAuthSuccess) {
         onAuthSuccess(res.user);

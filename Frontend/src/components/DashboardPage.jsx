@@ -122,7 +122,7 @@ export default function DashboardPage({ userTeam, navigateTo, showToast, current
               <span>CONTROL PANEL // DASHBOARD</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-minecraftBold text-[#F5F5F5] tracking-wide mb-1">
-              WELCOME BACK, {(currentUser?.username || currentUser?.name || "REYU").toUpperCase()}
+              WELCOME BACK, {(currentUser?.username || currentUser?.name || "PARTICIPANT").toUpperCase()}
             </h1>
             <p className="text-xs sm:text-sm text-[#8A8A8A]">
               Your team is ready. Start solving challenges and capture the flag.

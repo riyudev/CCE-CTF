@@ -3,8 +3,8 @@ import React, { useState } from "react";
 export default function Navbar({
   currentPath = "/",
   navigateTo,
-  currentUser = "Reyu",
-  isLoggedIn = true,
+  currentUser = "",
+  isLoggedIn = false,
   onLogout,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
