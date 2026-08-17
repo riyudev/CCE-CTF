@@ -7,12 +7,23 @@ import { Submission } from "../models/Submission.js";
 import { Competition } from "../models/Competition.js";
 import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
 
-const resolveFileUrl = (req) => {
+const resolveFileDetails = (req) => {
   if (req.file) {
-    return `/uploads/challenges/${req.file.filename}`;
+    return {
+      fileUrl: `/uploads/challenges/${req.file.filename}`,
+      originalFileName: req.file.originalname,
+    };
   }
-  const manualUrl = req.body.fileUrl?.trim();
-  return manualUrl || null;
+  const manualUrl = req.body.fileUrl?.trim() || null;
+  if (!manualUrl) {
+    return { fileUrl: null, originalFileName: null };
+  }
+  const manualOriginalName =
+    req.body.originalFileName?.trim() || path.basename(manualUrl);
+  return {
+    fileUrl: manualUrl,
+    originalFileName: manualOriginalName,
+  };
 };
 
 const deleteStoredFile = (fileUrl) => {
@@ -118,6 +129,8 @@ export const createAdminChallenge = async (req, res) => {
       return res.status(400).json({ message: "All challenge fields are required." });
     }
 
+    const { fileUrl, originalFileName } = resolveFileDetails(req);
+
     const challenge = await Challenge.create({
       title: title.trim(),
       category,
@@ -125,7 +138,8 @@ export const createAdminChallenge = async (req, res) => {
       points: Number(points),
       description: description.trim(),
       flag: flag.trim(),
-      fileUrl: resolveFileUrl(req),
+      fileUrl,
+      originalFileName,
       isActive,
     });
 
@@ -156,12 +170,21 @@ export const updateAdminChallenge = async (req, res) => {
     if (req.file) {
       deleteStoredFile(challenge.fileUrl);
       challenge.fileUrl = `/uploads/challenges/${req.file.filename}`;
+      challenge.originalFileName = req.file.originalname;
     } else if (req.body.fileUrl !== undefined) {
       const nextUrl = req.body.fileUrl?.trim() || null;
       if (!nextUrl && challenge.fileUrl) {
         deleteStoredFile(challenge.fileUrl);
+        challenge.fileUrl = null;
+        challenge.originalFileName = null;
+      } else {
+        challenge.fileUrl = nextUrl;
+        if (req.body.originalFileName !== undefined) {
+          challenge.originalFileName = req.body.originalFileName?.trim() || null;
+        } else if (nextUrl && !challenge.originalFileName) {
+          challenge.originalFileName = path.basename(nextUrl);
+        }
       }
-      challenge.fileUrl = nextUrl;
     }
 
     await challenge.save();

@@ -11,11 +11,25 @@ const API_BASE_URL = getNormalizedApiUrl();
 
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
-export const getFileDownloadUrl = (fileUrl) => {
+export const getFileDownloadUrl = (challengeOrUrl, challengeId) => {
+  if (!challengeOrUrl) return null;
+
+  if (typeof challengeOrUrl === "object" && (challengeOrUrl._id || challengeOrUrl.id)) {
+    const id = challengeOrUrl._id || challengeOrUrl.id;
+    return `${API_BASE_URL}/challenges/${id}/download`;
+  }
+
+  if (challengeId) {
+    return `${API_BASE_URL}/challenges/${challengeId}/download`;
+  }
+
+  const fileUrl = typeof challengeOrUrl === "string" ? challengeOrUrl : challengeOrUrl?.fileUrl;
   if (!fileUrl) return null;
+
   if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
     return fileUrl;
   }
+
   return `${API_ORIGIN}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
 };
 

@@ -30,6 +30,10 @@ const challengeSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    originalFileName: {
+      type: String,
+      default: null,
+    },
     flag: {
       type: String,
       required: [true, "Flag is required"],

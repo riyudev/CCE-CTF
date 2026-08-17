@@ -20,6 +20,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
     description: "",
     flag: "",
     fileUrl: "",
+    originalFileName: "",
     isActive: true,
   });
   const [selectedFile, setSelectedFile] = useState(null);
@@ -57,6 +58,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
       description: "",
       flag: "",
       fileUrl: "",
+      originalFileName: "",
       isActive: true,
     });
     setSelectedFile(null);
@@ -73,6 +75,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
       description: c.description || "",
       flag: c.flag || "",
       fileUrl: c.fileUrl || "",
+      originalFileName: c.originalFileName || "",
       isActive: c.isActive !== undefined ? c.isActive : true,
     });
     setSelectedFile(null);
@@ -109,8 +112,14 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
         formPayload.append("file", selectedFile);
       } else if (formData.fileUrl.trim()) {
         formPayload.append("fileUrl", formData.fileUrl.trim());
+        if (formData.originalFileName.trim()) {
+          formPayload.append("originalFileName", formData.originalFileName.trim());
+        }
       } else if (editingChallenge) {
         formPayload.append("fileUrl", formData.fileUrl.trim());
+        if (formData.originalFileName.trim()) {
+          formPayload.append("originalFileName", formData.originalFileName.trim());
+        }
       }
 
       if (editingChallenge) {
@@ -360,7 +369,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
                 )}
                 {!selectedFile && formData.fileUrl && (
                   <p className="text-[10px] text-[#8A8A8A] font-mono pt-1">
-                    Current file: {formData.fileUrl.split("/").pop()}
+                    Current file: {formData.originalFileName || formData.fileUrl.split("/").pop()}
                   </p>
                 )}
                 <p className="text-[10px] text-[#555555] pt-1">

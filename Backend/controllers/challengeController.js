@@ -1,8 +1,11 @@
+import fs from "fs";
+import path from "path";
 import { Challenge } from "../models/Challenge.js";
 import { Submission } from "../models/Submission.js";
 import { Team } from "../models/Team.js";
 import { User } from "../models/User.js";
 import { getCompetitionState } from "./competitionController.js";
+import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
 
 // @desc    Get all active challenges (excluding flag)
 // @route   GET /api/challenges
@@ -62,6 +65,55 @@ export const getChallengeById = async (req, res) => {
   } catch (error) {
     console.error("[CHALLENGE CONTROLLER] Get Challenge By ID Error:", error.message);
     return res.status(500).json({ message: "Server error fetching challenge details." });
+  }
+};
+
+// @desc    Download challenge file with original filename
+// @route   GET /api/challenges/:id/download
+export const downloadChallengeFile = async (req, res) => {
+  try {
+    const compState = await getCompetitionState();
+
+    if (compState.activeState === "ENDED") {
+      return res.status(403).json({
+        message: "CCE CTF challenges have ended. Thank you for participating.",
+        competitionState: "ENDED",
+      });
+    }
+
+    if (compState.activeState === "NOT_STARTED") {
+      return res.status(403).json({
+        message: "The CCE CTF competition has not started yet.",
+        competitionState: "NOT_STARTED",
+      });
+    }
+
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge || !challenge.isActive) {
+      return res.status(404).json({ message: "Challenge not found." });
+    }
+
+    if (!challenge.fileUrl) {
+      return res.status(404).json({ message: "No file available for this challenge." });
+    }
+
+    if (challenge.fileUrl.startsWith("http://") || challenge.fileUrl.startsWith("https://")) {
+      return res.redirect(challenge.fileUrl);
+    }
+
+    const storedFilename = path.basename(challenge.fileUrl);
+    const filePath = getChallengeFilePath(storedFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Challenge file does not exist on server." });
+    }
+
+    const downloadName = challenge.originalFileName || storedFilename;
+
+    return res.download(filePath, downloadName);
+  } catch (error) {
+    console.error("[CHALLENGE CONTROLLER] Download File Error:", error.message);
+    return res.status(500).json({ message: "Server error downloading challenge file." });
   }
 };
 

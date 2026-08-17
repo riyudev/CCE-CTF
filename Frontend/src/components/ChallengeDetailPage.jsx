@@ -105,17 +105,24 @@ export default function ChallengeDetailPage({
     );
   }
 
-  const { title, category, difficulty, points, description, fileUrl, file } = challenge;
+  const { title, category, difficulty, points, description, fileUrl, file, originalFileName } = challenge;
   const isSolved = challenge.solved || isAlreadySolved || submissionResult === "correct";
 
+  const displayFileName = originalFileName || (fileUrl ? fileUrl.split("/").pop() : file?.name);
+
   const handleDownload = () => {
-    const downloadUrl = getFileDownloadUrl(fileUrl);
+    const downloadUrl = getFileDownloadUrl(challenge);
     if (!downloadUrl) {
       if (showToast) showToast("No file available for this challenge.");
       return;
     }
-    window.open(downloadUrl, "_blank", "noopener,noreferrer");
-    if (showToast) showToast(`Downloading ${fileUrl.split("/").pop()}...`);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = displayFileName || "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (showToast) showToast(`Downloading ${displayFileName}...`);
   };
 
   const handleSubmitFlag = async (e) => {
@@ -225,11 +232,11 @@ export default function ChallengeDetailPage({
               {fileUrl || file ? (
                 <div className="flex items-center space-x-3">
                   <div className="w-9 h-9 rounded border border-[#242424] bg-[#111111] flex items-center justify-center text-lg">
-                    📄
+                    📎
                   </div>
                   <div>
                     <span className="text-sm font-bold text-[#F5F5F5] block">
-                      {fileUrl || file?.name}
+                      {displayFileName}
                     </span>
                     <span className="text-[10px] text-[#8A8A8A] font-mono">
                       ATTACHMENT AVAILABLE

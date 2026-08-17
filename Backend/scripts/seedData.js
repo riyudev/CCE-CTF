@@ -14,6 +14,7 @@ const initialChallenges = [
     points: 100,
     description: "A mysterious message has been discovered in an intercepted cipher string. Analyze the information provided and find the hidden flag.",
     fileUrl: "cipher.txt",
+    originalFileName: "cipher.txt",
     flag: "CCE{hidden_message}",
   },
   {
@@ -23,6 +24,7 @@ const initialChallenges = [
     points: 100,
     description: "Find the flag hidden somewhere in the source code or developer comments of this web application.",
     fileUrl: null,
+    originalFileName: null,
     flag: "CCE{web_starter_flag}",
   },
   {
@@ -32,6 +34,7 @@ const initialChallenges = [
     points: 200,
     description: "A corrupted disk image was recovered from a suspected system breach. Investigate the provided file and discover the hidden flag.",
     fileUrl: "disk_dump.raw",
+    originalFileName: "disk_dump.raw",
     flag: "CCE{lost_file_found}",
   },
   {
@@ -41,6 +44,7 @@ const initialChallenges = [
     points: 250,
     description: "Reverse engineer the compiled binary to understand its authentication logic and recover the hidden flag key.",
     fileUrl: "auth_checker.bin",
+    originalFileName: "auth_checker.bin",
     flag: "CCE{reverse_engineering_master}",
   },
   {
@@ -50,6 +54,7 @@ const initialChallenges = [
     points: 150,
     description: "An unusual QR code pattern was submitted to the security desk. Inspect the payload data to retrieve the flag.",
     fileUrl: "strange_qr.png",
+    originalFileName: "strange_qr.png",
     flag: "CCE{something_strange_indeed}",
   },
   {
@@ -59,6 +64,7 @@ const initialChallenges = [
     points: 100,
     description: "An insecure RSA public exponent was used to encrypt the flag. Factorize the modulus and decrypt the ciphertext.",
     fileUrl: "rsa_pubkey.pem",
+    originalFileName: "rsa_pubkey.pem",
     flag: "CCE{rsa_small_e_attack}",
   },
   {
@@ -68,6 +74,7 @@ const initialChallenges = [
     points: 200,
     description: "Bypass the login portal of a vulnerable web service using SQL injection techniques to reveal the administrator flag.",
     fileUrl: null,
+    originalFileName: null,
     flag: "CCE{sql_injection_bypass}",
   },
   {
@@ -77,6 +84,7 @@ const initialChallenges = [
     points: 100,
     description: "Analyze the Wireshark pcap file capture to extract transmitted credentials containing the flag.",
     fileUrl: "traffic_capture.pcap",
+    originalFileName: "traffic_capture.pcap",
     flag: "CCE{wireshark_packet_found}",
   },
 ];
