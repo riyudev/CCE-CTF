@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AuthLayout from "./AuthLayout";
 import InputField from "./InputField";
-import { api, setToken } from "../services/api";
+import { api, setToken, setStoredUser } from "../services/api";
 
 export default function RegisterPage({ navigateTo, onAuthSuccess }) {
   const [formData, setFormData] = useState({
