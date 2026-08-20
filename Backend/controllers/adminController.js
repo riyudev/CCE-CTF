@@ -202,13 +202,6 @@ export const updateAdminChallenge = async (req, res) => {
   }
 };
 
-    await challenge.save();
-    return res.json({ challenge });
-  } catch (error) {
-    return res.status(500).json({ message: "Error updating challenge." });
-  }
-};
-
 export const deleteAdminChallenge = async (req, res) => {
   try {
     const challenge = await Challenge.findById(req.params.id);
