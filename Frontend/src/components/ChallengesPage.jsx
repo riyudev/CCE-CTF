@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import ChallengeCard from "./ChallengeCard";
 import { api } from "../services/api";
 
+const CATEGORY_ORDER = ["MISC", "FORENSICS", "WEB", "CRYPTO", "REVERSE"];
+
 export default function ChallengesPage({ navigateTo }) {
   const [liveChallenges, setLiveChallenges] = useState([]);
   const [solvedIds, setSolvedIds] = useState([]);
@@ -11,7 +13,7 @@ export default function ChallengesPage({ navigateTo }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const categories = ["ALL", "WEB", "CRYPTO", "FORENSICS", "REVERSE", "MISC"];
+  const categories = ["ALL", ...CATEGORY_ORDER];
 
   useEffect(() => {
     async function loadChallengesData() {
@@ -57,16 +59,66 @@ export default function ChallengesPage({ navigateTo }) {
     }));
   }, [liveChallenges, solvedIds]);
 
-  const filteredChallenges = useMemo(() => {
-    return mergedChallenges.filter((item) => {
-      const matchesCategory =
-        selectedCategory === "ALL" ||
-        item.category.toUpperCase() === selectedCategory.toUpperCase();
-      const matchesSearch =
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+  // Group challenges by category in sequence: MISC, FORENSICS, WEB, CRYPTO, REVERSE
+  // Sort cards inside each category from lowest points to highest points
+  const groupedCategories = useMemo(() => {
+    const targetOrder =
+      selectedCategory === "ALL"
+        ? CATEGORY_ORDER
+        : [selectedCategory.toUpperCase()];
+
+    const groups = [];
+
+    targetOrder.forEach((catKey) => {
+      const items = mergedChallenges.filter((item) => {
+        const matchesCat = item.category.toUpperCase() === catKey;
+        const matchesSearch =
+          !searchQuery.trim() ||
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.description &&
+            item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        return matchesCat && matchesSearch;
+      });
+
+      // Do NOT include category if it has no challenges
+      if (items.length > 0) {
+        // Sort lowest points to highest points
+        items.sort((a, b) => a.points - b.points);
+        groups.push({
+          category: catKey,
+          challenges: items,
+        });
+      }
     });
+
+    // Handle extra categories if any exist outside standard order
+    if (selectedCategory === "ALL") {
+      const extraCategories = Array.from(
+        new Set(mergedChallenges.map((c) => c.category.toUpperCase()))
+      ).filter((c) => !CATEGORY_ORDER.includes(c));
+
+      extraCategories.forEach((catKey) => {
+        const items = mergedChallenges.filter((item) => {
+          const matchesCat = item.category.toUpperCase() === catKey;
+          const matchesSearch =
+            !searchQuery.trim() ||
+            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesCat && matchesSearch;
+        });
+
+        if (items.length > 0) {
+          items.sort((a, b) => a.points - b.points);
+          groups.push({
+            category: catKey,
+            challenges: items,
+          });
+        }
+      });
+    }
+
+    return groups;
   }, [mergedChallenges, selectedCategory, searchQuery]);
 
   const solvedCount = mergedChallenges.filter((c) => c.solved).length;
@@ -134,6 +186,7 @@ export default function ChallengesPage({ navigateTo }) {
       <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto z-10 space-y-8">
+        {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#242424] pb-6">
           <div>
             <div className="inline-flex items-center space-x-2 px-3 py-1 bg-[#111111] border border-[#39FF14]/30 rounded-full mb-3 text-xs text-[#39FF14] tracking-widest uppercase shadow-[0_0_10px_rgba(57,255,20,0.1)]">
@@ -164,6 +217,7 @@ export default function ChallengesPage({ navigateTo }) {
           </div>
         </div>
 
+        {/* Filter Bar & Search */}
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
@@ -205,14 +259,33 @@ export default function ChallengesPage({ navigateTo }) {
           </div>
         </div>
 
-        {filteredChallenges.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChallenges.map((item) => (
-              <ChallengeCard
-                key={item._id || item.id}
-                challenge={item}
-                onClick={() => navigateTo(`/challenges/${item._id || item.id}`)}
-              />
+        {/* CATEGORY HEADINGS & 4-COLUMN CARDS GRID */}
+        {groupedCategories.length > 0 ? (
+          <div className="space-y-10">
+            {groupedCategories.map((group) => (
+              <div key={group.category} className="space-y-4">
+                {/* Category Heading */}
+                <div className="flex items-center space-x-3 border-b border-[#242424] pb-3">
+                  <span className="w-2.5 h-2.5 bg-[#39FF14] rounded-full shadow-[0_0_8px_rgba(57,255,20,0.6)]" />
+                  <h2 className="text-xl sm:text-2xl font-minecraftBold text-[#F5F5F5] uppercase tracking-wider">
+                    {group.category}{" "}
+                    <span className="text-xs text-[#8A8A8A] font-mono font-normal">
+                      ({group.challenges.length})
+                    </span>
+                  </h2>
+                </div>
+
+                {/* 4-Column Cards Grid (Sorted Lowest Points to Highest) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {group.challenges.map((item) => (
+                    <ChallengeCard
+                      key={item._id || item.id}
+                      challenge={item}
+                      onClick={() => navigateTo(`/challenges/${item._id || item.id}`)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -224,7 +297,7 @@ export default function ChallengesPage({ navigateTo }) {
               NO CHALLENGES FOUND
             </h3>
             <p className="text-xs text-[#8A8A8A]">
-              Try another category or search term.
+              Try selecting another category or resetting your search query.
             </p>
             <button
               onClick={() => {

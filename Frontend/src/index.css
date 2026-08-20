@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --breakpoint-*: initial;
-  --breakpoint-laptop: 870px;
   --breakpoint-tablet: 500px;
+  --breakpoint-laptop: 870px;
 
   --font-minecraftBold: minecraft-bold, monospace;
   --font-spaceMonoBold: space-mono-bold, monospace;
