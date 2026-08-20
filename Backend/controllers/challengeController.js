@@ -121,20 +121,22 @@ export const downloadChallengeFile = async (req, res) => {
     if (challenge.fileUrl) {
       const filePath = getChallengeFilePath(storedFilename);
       if (fs.existsSync(filePath)) {
+        // Backfill DB fileData cache from disk file if available
+        try {
+          const diskBuffer = fs.readFileSync(filePath);
+          challenge.fileData = diskBuffer.toString("base64");
+          await challenge.save();
+        } catch {
+          // ignore cache write error
+        }
         return res.download(filePath, downloadName);
       }
     }
 
-    // 4. Fallback text file for legacy/seeded sample challenges missing binary payload
-    const fallbackText = `CCE CTF Challenge Asset: ${challenge.title}\nFilename: ${downloadName}\n\n[Challenge asset file container generated for production environment]`;
-    const fallbackBuffer = Buffer.from(fallbackText, "utf-8");
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(downloadName)}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
-    );
-    res.setHeader("Content-Length", fallbackBuffer.length);
-    return res.send(fallbackBuffer);
+    // 4. Return 404 if no actual binary file payload or disk asset exists
+    return res.status(404).json({
+      message: `Challenge asset file "${downloadName}" is not available on the server. Please contact CTF Admin.`,
+    });
   } catch (error) {
     console.error("[CHALLENGE CONTROLLER] Download File Error:", error.message);
     return res.status(500).json({ message: "Server error downloading challenge file." });

@@ -10,6 +10,14 @@ import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
 const resolveFileDetails = (req) => {
   if (req.file) {
     const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+    const filePath = getChallengeFilePath(filename);
+    if (req.file.buffer) {
+      try {
+        fs.writeFileSync(filePath, req.file.buffer);
+      } catch (err) {
+        console.error("[ADMIN CONTROLLER] Failed to write file to disk:", err.message);
+      }
+    }
     const fileData = req.file.buffer ? req.file.buffer.toString("base64") : null;
     return {
       fileUrl: `/uploads/challenges/${filename}`,
@@ -157,7 +165,7 @@ export const createAdminChallenge = async (req, res) => {
 export const updateAdminChallenge = async (req, res) => {
   try {
     const { title, category, difficulty, points, description, flag, isActive } = req.body;
-    const challenge = await Challenge.findById(req.params.id).select("+flag");
+    const challenge = await Challenge.findById(req.params.id).select("+flag +fileData");
     if (!challenge) {
       return res.status(404).json({ message: "Challenge not found." });
     }
@@ -175,6 +183,14 @@ export const updateAdminChallenge = async (req, res) => {
     if (req.file) {
       deleteStoredFile(challenge.fileUrl);
       const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+      const filePath = getChallengeFilePath(filename);
+      if (req.file.buffer) {
+        try {
+          fs.writeFileSync(filePath, req.file.buffer);
+        } catch (err) {
+          console.error("[ADMIN CONTROLLER] Failed to write file to disk on update:", err.message);
+        }
+      }
       challenge.fileUrl = `/uploads/challenges/${filename}`;
       challenge.originalFileName = req.file.originalname;
       challenge.fileData = req.file.buffer ? req.file.buffer.toString("base64") : null;
@@ -185,11 +201,11 @@ export const updateAdminChallenge = async (req, res) => {
         challenge.fileUrl = null;
         challenge.originalFileName = null;
         challenge.fileData = null;
-      } else {
+      } else if (nextUrl) {
         challenge.fileUrl = nextUrl;
         if (req.body.originalFileName !== undefined) {
           challenge.originalFileName = req.body.originalFileName?.trim() || null;
-        } else if (nextUrl && !challenge.originalFileName) {
+        } else if (!challenge.originalFileName) {
           challenge.originalFileName = path.basename(nextUrl);
         }
       }

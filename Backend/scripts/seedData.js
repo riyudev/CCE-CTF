@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
 import { User } from "../models/User.js";
 import { Challenge } from "../models/Challenge.js";
 import { Competition } from "../models/Competition.js";
+import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
 
 dotenv.config();
 
@@ -129,6 +132,22 @@ const seed = async () => {
       console.log(`[SEED] Seeded ${initialChallenges.length} initial CTF challenges.`);
     } else {
       console.log(`[SEED] Challenges already populated (${countChallenges} found).`);
+    }
+
+    // Write file buffers to disk for any challenges that have fileData & fileUrl
+    const allChalls = await Challenge.find().select("+fileData");
+    for (const ch of allChalls) {
+      if (ch.fileUrl && ch.fileData) {
+        const storedFilename = path.basename(ch.fileUrl);
+        const filePath = getChallengeFilePath(storedFilename);
+        if (!fs.existsSync(filePath)) {
+          try {
+            fs.writeFileSync(filePath, Buffer.from(ch.fileData, "base64"));
+          } catch (e) {
+            console.error(`[SEED] Warning writing ${storedFilename} to disk:`, e.message);
+          }
+        }
+      }
     }
 
     // 3. Seed Competition Settings
