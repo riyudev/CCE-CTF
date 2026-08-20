@@ -34,6 +34,11 @@ const challengeSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    fileData: {
+      type: String,
+      default: null,
+      select: false, // Base64 encoded file data - excluded from default queries
+    },
     flag: {
       type: String,
       required: [true, "Flag is required"],

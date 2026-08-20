@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { api, getFileDownloadUrl, getStoredUser } from "../services/api";
+import { api, getFileDownloadUrl, getToken, getStoredUser } from "../services/api";
 
 export default function ChallengeDetailPage({
   challengeId,
@@ -16,6 +16,7 @@ export default function ChallengeDetailPage({
   const [resultMessage, setResultMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlreadySolved, setIsAlreadySolved] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -110,19 +111,70 @@ export default function ChallengeDetailPage({
 
   const displayFileName = originalFileName || (fileUrl ? fileUrl.split("/").pop() : file?.name);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const downloadUrl = getFileDownloadUrl(challenge);
     if (!downloadUrl) {
       if (showToast) showToast("No file available for this challenge.");
       return;
     }
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = displayFileName || "";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    if (showToast) showToast(`Downloading ${displayFileName}...`);
+
+    setIsDownloading(true);
+    try {
+      if (downloadUrl.includes("/api/challenges/") && downloadUrl.endsWith("/download")) {
+        const token = getToken();
+        const response = await fetch(downloadUrl, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (!response.ok) {
+          let errorText = "Failed to download challenge file.";
+          try {
+            const errData = await response.json();
+            if (errData.message) errorText = errData.message;
+          } catch {
+            // fallback
+          }
+          throw new Error(errorText);
+        }
+
+        let fileName = displayFileName;
+        const disposition = response.headers.get("Content-Disposition");
+        if (disposition && disposition.includes("filename=")) {
+          const match = disposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;'"\n]+)['"]?/i);
+          if (match && match[1]) {
+            fileName = decodeURIComponent(match[1]);
+          }
+        }
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = fileName || displayFileName || "challenge_file";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+        if (showToast) showToast(`Downloaded ${fileName}`);
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.download = displayFileName || "";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (showToast) showToast(`Downloading ${displayFileName}...`);
+    } catch (err) {
+      console.error("Download error:", err);
+      if (showToast) showToast(err.message || "Failed to download challenge file.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleSubmitFlag = async (e) => {
@@ -253,9 +305,10 @@ export default function ChallengeDetailPage({
                 <button
                   type="button"
                   onClick={handleDownload}
-                  className="px-4 py-2 bg-[#111111] text-[#39FF14] border border-[#39FF14]/50 hover:bg-[#39FF14] hover:text-[#080808] text-xs uppercase tracking-wider font-bold rounded-sm transition-all cursor-pointer"
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-[#111111] text-[#39FF14] border border-[#39FF14]/50 hover:bg-[#39FF14] hover:text-[#080808] text-xs uppercase tracking-wider font-bold rounded-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  DOWNLOAD
+                  {isDownloading ? "DOWNLOADING..." : "DOWNLOAD"}
                 </button>
               )}
             </div>

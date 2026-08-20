@@ -9,20 +9,24 @@ import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
 
 const resolveFileDetails = (req) => {
   if (req.file) {
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+    const fileData = req.file.buffer ? req.file.buffer.toString("base64") : null;
     return {
-      fileUrl: `/uploads/challenges/${req.file.filename}`,
+      fileUrl: `/uploads/challenges/${filename}`,
       originalFileName: req.file.originalname,
+      fileData,
     };
   }
   const manualUrl = req.body.fileUrl?.trim() || null;
   if (!manualUrl) {
-    return { fileUrl: null, originalFileName: null };
+    return { fileUrl: null, originalFileName: null, fileData: null };
   }
   const manualOriginalName =
     req.body.originalFileName?.trim() || path.basename(manualUrl);
   return {
     fileUrl: manualUrl,
     originalFileName: manualOriginalName,
+    fileData: null,
   };
 };
 
@@ -129,7 +133,7 @@ export const createAdminChallenge = async (req, res) => {
       return res.status(400).json({ message: "All challenge fields are required." });
     }
 
-    const { fileUrl, originalFileName } = resolveFileDetails(req);
+    const { fileUrl, originalFileName, fileData } = resolveFileDetails(req);
 
     const challenge = await Challenge.create({
       title: title.trim(),
@@ -140,6 +144,7 @@ export const createAdminChallenge = async (req, res) => {
       flag: flag.trim(),
       fileUrl,
       originalFileName,
+      fileData,
       isActive,
     });
 
@@ -169,14 +174,17 @@ export const updateAdminChallenge = async (req, res) => {
 
     if (req.file) {
       deleteStoredFile(challenge.fileUrl);
-      challenge.fileUrl = `/uploads/challenges/${req.file.filename}`;
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+      challenge.fileUrl = `/uploads/challenges/${filename}`;
       challenge.originalFileName = req.file.originalname;
+      challenge.fileData = req.file.buffer ? req.file.buffer.toString("base64") : null;
     } else if (req.body.fileUrl !== undefined) {
       const nextUrl = req.body.fileUrl?.trim() || null;
       if (!nextUrl && challenge.fileUrl) {
         deleteStoredFile(challenge.fileUrl);
         challenge.fileUrl = null;
         challenge.originalFileName = null;
+        challenge.fileData = null;
       } else {
         challenge.fileUrl = nextUrl;
         if (req.body.originalFileName !== undefined) {
@@ -186,6 +194,13 @@ export const updateAdminChallenge = async (req, res) => {
         }
       }
     }
+
+    await challenge.save();
+    return res.json({ challenge });
+  } catch (error) {
+    return res.status(500).json({ message: "Error updating challenge." });
+  }
+};
 
     await challenge.save();
     return res.json({ challenge });
