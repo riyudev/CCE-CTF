@@ -1,5 +1,6 @@
 import { Team } from "../models/Team.js";
 import { User } from "../models/User.js";
+import { attachMemberScoresToTeams } from "../utils/teamUtils.js";
 
 // Random team code generator
 const generateTeamCode = () => {
@@ -71,8 +72,10 @@ export const createTeam = async (req, res) => {
       .populate("leader", "name username email")
       .populate("members", "name username email");
 
+    const teamWithScores = await attachMemberScoresToTeams(populatedTeam);
+
     return res.status(201).json({
-      team: populatedTeam,
+      team: teamWithScores,
       role: currentUser.role,
     });
   } catch (error) {
@@ -128,7 +131,9 @@ export const joinTeam = async (req, res) => {
       .populate("leader", "name username email")
       .populate("members", "name username email");
 
-    return res.json({ team: populatedTeam, role: currentUser.role });
+    const teamWithScores = await attachMemberScoresToTeams(populatedTeam);
+
+    return res.json({ team: teamWithScores, role: currentUser.role });
   } catch (error) {
     console.error("[TEAM CONTROLLER] Join Team Error:", error.message);
     return res.status(500).json({ message: "Server error joining team." });
@@ -148,7 +153,9 @@ export const getMyTeam = async (req, res) => {
       .populate("leader", "name username email")
       .populate("members", "name username email");
 
-    return res.json({ team });
+    const teamWithScores = await attachMemberScoresToTeams(team);
+
+    return res.json({ team: teamWithScores });
   } catch (error) {
     console.error("[TEAM CONTROLLER] Get My Team Error:", error.message);
     return res.status(500).json({ message: "Server error fetching team details." });

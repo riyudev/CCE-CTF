@@ -167,13 +167,27 @@ export default function AdminTeams({ currentPath, navigateTo, onLogout }) {
               </div>
               <div>Current Score: <strong className="text-[#39FF14] font-minecraftBold">{selectedTeamModal.score || 0} PTS</strong></div>
               <div className="pt-2 border-t border-[#242424]">
-                <div className="font-bold text-[#F5F5F5] mb-2 uppercase">Team Members ({selectedTeamModal.members?.length || 0}/5):</div>
-                <ul className="space-y-1 bg-[#080808] p-3 border border-[#242424] rounded-sm max-h-40 overflow-y-auto">
+                <div className="font-bold text-[#F5F5F5] mb-2 uppercase">
+                  Team Members & Individual Scores ({selectedTeamModal.members?.length || 0}/5):
+                </div>
+                <ul className="space-y-1.5 bg-[#080808] p-3 border border-[#242424] rounded-sm max-h-48 overflow-y-auto divide-y divide-[#242424]/40">
                   {Array.isArray(selectedTeamModal.members) && selectedTeamModal.members.length > 0 ? (
                     selectedTeamModal.members.map((m, idx) => (
-                      <li key={m._id || idx} className="flex justify-between items-center text-[#F5F5F5]">
-                        <span>• {m.name || m.username}</span>
-                        <span className="text-[#8A8A8A] text-[10px]">@{m.username}</span>
+                      <li key={m._id || idx} className="flex justify-between items-center text-[#F5F5F5] pt-1.5 first:pt-0">
+                        <div>
+                          <span className="font-bold">• {m.name || m.username}</span>
+                          <span className="text-[#8A8A8A] text-[10px] ml-1.5">@{m.username}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {m.solvesCount !== undefined && (
+                            <span className="text-[#8A8A8A] text-[10px] font-mono">
+                              {m.solvesCount} solves
+                            </span>
+                          )}
+                          <span className="text-[#39FF14] font-minecraftBold text-xs">
+                            {m.score || 0} PTS
+                          </span>
+                        </div>
                       </li>
                     ))
                   ) : (

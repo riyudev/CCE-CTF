@@ -173,7 +173,7 @@ export default function TeamSetupPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-[#080808] border border-[#242424] p-4 rounded-sm">
                 <span className="text-xs text-[#8A8A8A] uppercase tracking-wider block mb-2">
                   Team Code
@@ -204,6 +204,72 @@ export default function TeamSetupPage({
                     READY
                   </span>
                 </div>
+              </div>
+
+              <div className="bg-[#080808] border border-[#242424] p-4 rounded-sm">
+                <span className="text-xs text-[#8A8A8A] uppercase tracking-wider block mb-2">
+                  Total Team Score
+                </span>
+                <div className="text-lg font-minecraftBold text-[#39FF14]">
+                  {userTeam.score || 0} PTS
+                </div>
+              </div>
+            </div>
+
+            {/* TEAM ROSTER & MEMBER SCORES */}
+            <div className="bg-[#080808] border border-[#242424] p-5 rounded-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-[#242424] pb-3">
+                <h3 className="text-xs font-minecraftBold text-[#F5F5F5] uppercase tracking-wider">
+                  TEAM ROSTER & MEMBER SCORES
+                </h3>
+                <span className="text-[10px] text-[#8A8A8A] font-mono">
+                  {userTeam.members?.length || 0} MEMBERS
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {Array.isArray(userTeam.members) && userTeam.members.length > 0 ? (
+                  userTeam.members.map((m, idx) => {
+                    const isMemLeader =
+                      m._id &&
+                      (String(m._id) === String(leaderId) || String(m.id) === String(leaderId));
+
+                    return (
+                      <div
+                        key={m._id || m.id || idx}
+                        className="flex items-center justify-between bg-[#111111] border border-[#242424] px-4 py-2.5 rounded-sm text-xs hover:border-[#39FF14]/30 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[#39FF14] font-bold">•</span>
+                          <span className="text-[#F5F5F5] font-minecraftBold">
+                            {m.name || m.username}
+                          </span>
+                          <span className="text-[#8A8A8A] text-[10px] font-mono">
+                            (@{m.username})
+                          </span>
+                          {isMemLeader && (
+                            <span className="text-[9px] bg-[#39FF14]/10 border border-[#39FF14]/40 text-[#39FF14] px-1.5 py-0.5 rounded font-mono uppercase font-bold">
+                              LEADER
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          {m.solvesCount !== undefined && (
+                            <span className="text-[10px] text-[#8A8A8A] font-mono">
+                              {m.solvesCount} {m.solvesCount === 1 ? "solve" : "solves"}
+                            </span>
+                          )}
+                          <span className="text-xs font-minecraftBold text-[#39FF14]">
+                            {m.score || 0} PTS
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-[#8A8A8A] italic">No members listed.</p>
+                )}
               </div>
             </div>
 

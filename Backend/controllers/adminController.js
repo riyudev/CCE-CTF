@@ -6,6 +6,7 @@ import { Challenge } from "../models/Challenge.js";
 import { Submission } from "../models/Submission.js";
 import { Competition } from "../models/Competition.js";
 import { getChallengeFilePath } from "../middleware/uploadMiddleware.js";
+import { attachMemberScoresToTeams } from "../utils/teamUtils.js";
 
 const resolveFileDetails = (req) => {
   if (req.file) {
@@ -99,7 +100,9 @@ export const getAdminTeams = async (req, res) => {
     const teams = await Team.find()
       .populate("leader", "name username email")
       .populate("members", "name username email");
-    return res.json({ teams });
+
+    const teamsWithScores = await attachMemberScoresToTeams(teams);
+    return res.json({ teams: teamsWithScores });
   } catch (error) {
     return res.status(500).json({ message: "Error fetching teams for admin." });
   }
