@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "./AdminLayout";
 import InputField from "./InputField";
 import { api } from "../services/api";
@@ -10,6 +10,12 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
   const [editingChallenge, setEditingChallenge] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -47,6 +53,47 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
   useEffect(() => {
     fetchAdminChallenges();
   }, []);
+
+  const filteredChallenges = useMemo(() => {
+    return challengesList.filter((c) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        (c.title && c.title.toLowerCase().includes(q)) ||
+        (c.category && c.category.toLowerCase().includes(q)) ||
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        (c.flag && c.flag.toLowerCase().includes(q));
+
+      const matchesCategory =
+        selectedCategory === "ALL" ||
+        (c.category && c.category.toUpperCase() === selectedCategory.toUpperCase());
+
+      const matchesDifficulty =
+        selectedDifficulty === "ALL" ||
+        (c.difficulty && c.difficulty.toUpperCase() === selectedDifficulty.toUpperCase());
+
+      const isEnabled = c.isActive !== false;
+      const matchesStatus =
+        selectedStatus === "ALL" ||
+        (selectedStatus === "ENABLED" && isEnabled) ||
+        (selectedStatus === "DISABLED" && !isEnabled);
+
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesStatus;
+    });
+  }, [challengesList, searchQuery, selectedCategory, selectedDifficulty, selectedStatus]);
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    selectedCategory !== "ALL" ||
+    selectedDifficulty !== "ALL" ||
+    selectedStatus !== "ALL";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("ALL");
+    setSelectedDifficulty("ALL");
+    setSelectedStatus("ALL");
+  };
 
   const handleOpenAddModal = () => {
     setEditingChallenge(null);
@@ -175,7 +222,7 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
             CHALLENGES MANAGEMENT
           </h1>
           <p className="text-xs text-[#8A8A8A]">
-            Create, update, toggle, and manage CTF challenges in MongoDB.
+            Create, update, toggle, search, and filter CTF challenges in MongoDB.
           </p>
         </div>
 
@@ -192,6 +239,93 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
           &gt; {errorMsg}
         </div>
       )}
+
+      {/* Search & Filter Controls Bar */}
+      <div className="bg-[#111111] border border-[#242424] p-4 rounded-sm space-y-3 box-glow-neon">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Search Box */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search title, flag, description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] rounded-sm px-3 py-2 text-xs outline-none placeholder:text-[#555555]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2 text-xs text-[#8A8A8A] hover:text-[#39FF14] cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] rounded-sm px-3 py-2 text-xs outline-none cursor-pointer"
+            >
+              <option value="ALL">All Categories</option>
+              <option value="WEB">Web</option>
+              <option value="CRYPTO">Crypto</option>
+              <option value="FORENSICS">Forensics</option>
+              <option value="REVERSE">Reverse</option>
+              <option value="MISC">Misc</option>
+            </select>
+          </div>
+
+          {/* Difficulty Filter */}
+          <div>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] rounded-sm px-3 py-2 text-xs outline-none cursor-pointer"
+            >
+              <option value="ALL">All Difficulties</option>
+              <option value="EASY">Easy</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HARD">Hard</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full bg-[#080808] text-[#F5F5F5] border border-[#242424] focus:border-[#39FF14] rounded-sm px-3 py-2 text-xs outline-none cursor-pointer"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="ENABLED">Enabled</option>
+              <option value="DISABLED">Disabled</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Counter and Reset */}
+        <div className="flex items-center justify-between text-[11px] text-[#8A8A8A] font-mono pt-1">
+          <div>
+            <span>Showing </span>
+            <strong className="text-[#39FF14] font-bold">{filteredChallenges.length}</strong>
+            <span> of </span>
+            <strong className="text-[#F5F5F5] font-bold">{challengesList.length}</strong>
+            <span> challenges</span>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="text-[#FF4D4D] hover:underline uppercase text-[10px] cursor-pointer"
+            >
+              Reset Filters ✕
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Challenges Table */}
       <div className="bg-[#111111] border border-[#242424] rounded-sm overflow-hidden box-glow-neon">
@@ -215,8 +349,8 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
                     &gt; LOADING CHALLENGES FROM MONGODB...
                   </td>
                 </tr>
-              ) : challengesList.length > 0 ? (
-                challengesList.map((c) => (
+              ) : filteredChallenges.length > 0 ? (
+                filteredChallenges.map((c) => (
                   <tr key={c._id || c.id} className="hover:bg-[#080808]/50 transition-colors">
                     <td className="py-3 px-4 font-minecraftBold text-[#F5F5F5]">
                       {c.title}
@@ -264,7 +398,19 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
               ) : (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-[#8A8A8A]">
-                    No challenges found in database.
+                    {hasActiveFilters ? (
+                      <div className="space-y-2">
+                        <p>No challenges match your search and filter criteria.</p>
+                        <button
+                          onClick={handleResetFilters}
+                          className="px-3 py-1 bg-[#080808] border border-[#39FF14]/50 text-[#39FF14] text-xs uppercase tracking-wider rounded-sm hover:bg-[#39FF14] hover:text-[#080808] transition-all cursor-pointer"
+                        >
+                          Reset Filters
+                        </button>
+                      </div>
+                    ) : (
+                      "No challenges found in database."
+                    )}
                   </td>
                 </tr>
               )}
