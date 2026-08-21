@@ -83,10 +83,27 @@ export default function AdminChallenges({ currentPath, navigateTo, onLogout, set
   };
 
   const handleToggleActive = async (c) => {
+    const targetId = c._id || c.id;
+    const currentActive = c.isActive !== false;
+    const nextActive = !currentActive;
+
+    // Optimistic state update
+    setChallengesList((prev) =>
+      prev.map((item) =>
+        (item._id || item.id) === targetId ? { ...item, isActive: nextActive } : item
+      )
+    );
+
     try {
-      await api.admin.updateChallenge(c._id || c.id, { isActive: !c.isActive });
+      await api.admin.updateChallenge(targetId, { isActive: nextActive });
       fetchAdminChallenges();
     } catch (err) {
+      // Revert on error
+      setChallengesList((prev) =>
+        prev.map((item) =>
+          (item._id || item.id) === targetId ? { ...item, isActive: currentActive } : item
+        )
+      );
       setErrorMsg(err.message || "Failed to toggle challenge status.");
     }
   };

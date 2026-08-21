@@ -150,9 +150,24 @@ export const api = {
     getTeams: () => request("/admin/teams"),
     deleteTeam: (id) => request(`/admin/teams/${id}`, { method: "DELETE" }),
     getChallenges: () => request("/admin/challenges"),
-    createChallenge: (formData) => uploadRequest("/admin/challenges", formData, "POST"),
-    updateChallenge: (id, formData) =>
-      uploadRequest(`/admin/challenges/${id}`, formData, "PUT"),
+    createChallenge: (data) => {
+      if (data instanceof FormData) {
+        return uploadRequest("/admin/challenges", data, "POST");
+      }
+      return request("/admin/challenges", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    updateChallenge: (id, data) => {
+      if (data instanceof FormData) {
+        return uploadRequest(`/admin/challenges/${id}`, data, "PUT");
+      }
+      return request(`/admin/challenges/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
     deleteChallenge: (id) =>
       request(`/admin/challenges/${id}`, { method: "DELETE" }),
     getSubmissions: () => request("/admin/submissions"),

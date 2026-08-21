@@ -135,7 +135,7 @@ export const createAdminChallenge = async (req, res) => {
     const isActive =
       req.body.isActive === undefined
         ? true
-        : req.body.isActive === true || req.body.isActive === "true";
+        : req.body.isActive === true || req.body.isActive === "true" || req.body.isActive === 1 || req.body.isActive === "1";
 
     if (!title || !category || !difficulty || !points || !description || !flag) {
       return res.status(400).json({ message: "All challenge fields are required." });
@@ -177,7 +177,7 @@ export const updateAdminChallenge = async (req, res) => {
     if (description) challenge.description = description.trim();
     if (flag) challenge.flag = flag.trim();
     if (isActive !== undefined) {
-      challenge.isActive = isActive === true || isActive === "true";
+      challenge.isActive = isActive === true || isActive === "true" || isActive === 1 || isActive === "1";
     }
 
     if (req.file) {
