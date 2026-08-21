@@ -3,6 +3,7 @@ import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminUsers from "./components/AdminUsers";
 import AdminTeams from "./components/AdminTeams";
+import AdminTeamSolves from "./components/AdminTeamSolves";
 import AdminChallenges from "./components/AdminChallenges";
 import AdminSubmissions from "./components/AdminSubmissions";
 import AdminLeaderboard from "./components/AdminLeaderboard";
@@ -132,6 +133,8 @@ function App() {
           <AdminUsers currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
         ) : currentPath === "/teams" ? (
           <AdminTeams currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
+        ) : currentPath === "/team-solves" ? (
+          <AdminTeamSolves currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
         ) : currentPath === "/challenges" ? (
           <AdminChallenges currentPath={currentPath} navigateTo={navigateTo} onLogout={handleLogout} />
         ) : currentPath === "/submissions" ? (

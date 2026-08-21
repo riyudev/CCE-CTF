@@ -287,3 +287,89 @@ export const updateAdminCompetitionSettings = async (req, res) => {
     return res.status(500).json({ message: "Error updating competition settings." });
   }
 };
+
+// --- TEAM SOLVED CHALLENGES ---
+export const getAdminTeamSolves = async (req, res) => {
+  try {
+    const teams = await Team.find()
+      .populate("leader", "name username email")
+      .populate("members", "name username email");
+
+    const correctSubmissions = await Submission.find({ correct: true })
+      .populate("challenge", "title category difficulty points")
+      .populate("user", "name username email")
+      .sort({ submittedAt: -1, createdAt: -1 });
+
+    const teamSolvesMap = new Map();
+    for (const sub of correctSubmissions) {
+      if (!sub.team) continue;
+      const teamIdStr = String(sub.team);
+      if (!teamSolvesMap.has(teamIdStr)) {
+        teamSolvesMap.set(teamIdStr, []);
+      }
+      teamSolvesMap.get(teamIdStr).push({
+        submissionId: sub._id,
+        challengeId: sub.challenge?._id || null,
+        title: sub.challenge?.title || "Unknown Challenge",
+        category: sub.challenge?.category || "MISC",
+        difficulty: sub.challenge?.difficulty || "MEDIUM",
+        points: sub.points || sub.challenge?.points || 0,
+        solvedBy: sub.user
+          ? {
+              id: sub.user._id,
+              name: sub.user.name,
+              username: sub.user.username,
+            }
+          : null,
+        solvedAt: sub.submittedAt || sub.createdAt,
+      });
+    }
+
+    const teamsWithSolves = teams.map((teamDoc) => {
+      const teamObj = teamDoc.toObject();
+      const teamIdStr = String(teamObj._id);
+      const solves = teamSolvesMap.get(teamIdStr) || [];
+
+      const categoryBreakdown = {};
+      const difficultyBreakdown = {};
+      solves.forEach((s) => {
+        categoryBreakdown[s.category] = (categoryBreakdown[s.category] || 0) + 1;
+        difficultyBreakdown[s.difficulty] = (difficultyBreakdown[s.difficulty] || 0) + 1;
+      });
+
+      return {
+        ...teamObj,
+        solvesCount: solves.length,
+        solves,
+        categoryBreakdown,
+        difficultyBreakdown,
+      };
+    });
+
+    const totalSolves = correctSubmissions.length;
+    const categoryStats = {};
+    const difficultyStats = {};
+    correctSubmissions.forEach((sub) => {
+      if (sub.challenge) {
+        const cat = sub.challenge.category || "UNKNOWN";
+        const diff = sub.challenge.difficulty || "UNKNOWN";
+        categoryStats[cat] = (categoryStats[cat] || 0) + 1;
+        difficultyStats[diff] = (difficultyStats[diff] || 0) + 1;
+      }
+    });
+
+    return res.json({
+      teams: teamsWithSolves,
+      stats: {
+        totalTeams: teams.length,
+        totalSolves,
+        categoryStats,
+        difficultyStats,
+      },
+    });
+  } catch (error) {
+    console.error("[ADMIN CONTROLLER] Error fetching team solves:", error.message);
+    return res.status(500).json({ message: "Error fetching team solved challenges." });
+  }
+};
+

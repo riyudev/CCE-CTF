@@ -4,6 +4,7 @@ const menuItems = [
   { name: "Dashboard", path: "/dashboard", altPath: "/admin" },
   { name: "Users", path: "/users", altPath: "/admin/users" },
   { name: "Teams", path: "/teams", altPath: "/admin/teams" },
+  { name: "Team Solves", path: "/team-solves", altPath: "/admin/team-solves" },
   { name: "Challenges", path: "/challenges", altPath: "/admin/challenges" },
   { name: "Submissions", path: "/submissions", altPath: "/admin/submissions" },
   { name: "Leaderboard", path: "/leaderboard", altPath: "/admin/leaderboard" },

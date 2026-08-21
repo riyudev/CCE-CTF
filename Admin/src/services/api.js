@@ -149,6 +149,7 @@ export const api = {
     deleteUser: (id) => request(`/admin/users/${id}`, { method: "DELETE" }),
     getTeams: () => request("/admin/teams"),
     deleteTeam: (id) => request(`/admin/teams/${id}`, { method: "DELETE" }),
+    getTeamSolves: () => request("/admin/team-solves"),
     getChallenges: () => request("/admin/challenges"),
     createChallenge: (data) => {
       if (data instanceof FormData) {

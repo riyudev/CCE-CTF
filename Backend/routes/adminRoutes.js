@@ -11,6 +11,7 @@ import {
   getAdminSubmissions,
   getAdminCompetitionSettings,
   updateAdminCompetitionSettings,
+  getAdminTeamSolves,
 } from "../controllers/adminController.js";
 import { protect, requireAdmin } from "../middleware/authMiddleware.js";
 import { challengeFileUpload } from "../middleware/uploadMiddleware.js";
@@ -26,6 +27,7 @@ router.delete("/users/:id", deleteAdminUser);
 // Team Management
 router.get("/teams", getAdminTeams);
 router.delete("/teams/:id", deleteAdminTeam);
+router.get("/team-solves", getAdminTeamSolves);
 
 // Challenge CRUD
 router.get("/challenges", getAdminChallenges);
